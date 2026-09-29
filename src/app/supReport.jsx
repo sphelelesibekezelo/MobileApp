@@ -8,10 +8,13 @@ import {
   TouchableOpacity,
   TextInput,
   Platform,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+
+import logoImg from "@/assets/images/logo.png"; // Same path as supervisorDash.jsx
 
 // Reusable Metric Card Component
 const MetricCard = ({ icon, change, label, value, isPositive }) => (
@@ -146,23 +149,26 @@ export default function SupervisorReports() {
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
       
-      {/* Top Header */}
+      {/* Top Header (UPDATED to match supervisorDash.jsx) */}
       <View style={styles.header}>
         <View style={styles.headerLeft}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-            <Ionicons name="chevron-back-outline" size={24} color="#FFFFFF" />
-          </TouchableOpacity>
-          <View>
-            <Text style={styles.headerTitle}>StudentAssist</Text>
+          <Image
+            source={logoImg}
+            style={styles.iconContainer}
+            resizeMode="contain" 
+          />
+          <View style={styles.headerTextContainer}>
+            <Text style={styles.headerTitle}>StudentAssistance</Text>
             <Text style={styles.headerSubtitle}>ABSENCE TRACKER</Text>
           </View>
         </View>
+
         <View style={styles.headerRight}>
           <TouchableOpacity style={styles.iconButton}>
-            <Ionicons name="notifications-outline" size={22} color="#FFFFFF" />
+            <Ionicons name="notifications-outline" size={22} color="#1E3A8A" />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.iconButton} onPress={() => router.replace('/logIn')}>
-            <Ionicons name="log-out-outline" size={22} color="#FFFFFF" />
+          <TouchableOpacity style={styles.iconButton} onPress={() => router.push('/logOut')}>
+            <Ionicons name="log-out-outline" size={22} color="#1E3A8A" />
           </TouchableOpacity>
         </View>
       </View>
@@ -228,7 +234,6 @@ export default function SupervisorReports() {
           <TouchableOpacity style={styles.filterButton}>
             <Ionicons name="filter-outline" size={16} color="#4A5568" style={{ marginRight: 6 }} />
             <Text style={styles.filterText}>Filters</Text>
-            {/* Small badge */}
             <View style={styles.filterBadge}>
               <Text style={styles.filterBadgeText}>2</Text>
             </View>
@@ -266,7 +271,7 @@ export default function SupervisorReports() {
         </Text>
       </View>
 
-      {/* --- UPDATED BOTTOM NAVIGATION --- */}
+      {/* --- BOTTOM NAVIGATION --- */}
       <View style={styles.bottomNav}>
         {/* Home Tab */}
         <TouchableOpacity 
@@ -313,13 +318,50 @@ export default function SupervisorReports() {
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: '#8FB3D9' },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 12, backgroundColor: '#1E3A8A' },
-  headerLeft: { flexDirection: 'row', alignItems: 'center' },
-  backButton: { marginRight: 10 },
-  headerTitle: { fontSize: 16, fontWeight: '700', color: '#FFFFFF' },
-  headerSubtitle: { fontSize: 9, fontWeight: '600', color: '#A0C1DD', letterSpacing: 1 },
-  headerRight: { flexDirection: 'row', alignItems: 'center' },
-  iconButton: { marginLeft: 16 },
+  
+  // --- Header (updated to match supervisorDash.jsx) ---
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E2E8F0',
+  },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  iconContainer: {
+    width: 40,
+    height: 40,
+    marginRight: 10,
+  },
+  headerTextContainer: {
+    justifyContent: 'center',
+  },
+  headerTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#1A202C',
+  },
+  headerSubtitle: {
+    fontSize: 9,
+    fontWeight: '600',
+    color: '#718096',
+    letterSpacing: 1,
+    marginTop: 2,
+  },
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  iconButton: {
+    marginLeft: 16,
+  },
+
   scrollContent: { padding: 20, paddingBottom: 100 },
   
   // Title Section

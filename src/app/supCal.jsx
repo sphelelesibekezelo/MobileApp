@@ -23,54 +23,47 @@ const assistants = [
   { id: 3, name: 'Segomotsa Lencwe', initials: 'SM', role: 'Student Assistant', status: 'PENDING', color: '#A78BFA' },
 ];
 
-const AssistantCard = ({ item }) => (
-  <View style={styles.assistantCard}>
-    <View style={[styles.avatar, { backgroundColor: item.color }]}>
-      <Text style={styles.avatarText}>{item.initials}</Text>
-    </View>
-    <View style={styles.assistantInfo}>
-      <Text style={styles.assistantName}>{item.name}</Text>
-      <Text style={styles.assistantRole}>{item.role}</Text>
-    </View>
-    <View style={[styles.statusBadge, item.status === 'PENDING' && styles.statusBadgePending]}>
-      <Text style={[styles.statusText, item.status === 'PENDING' && styles.statusTextPending]}>
-        {item.status}
-      </Text>
-    </View>
-  </View>
-);
+// Initial dummy data for shifts per day
+const initialShiftRecords = {
+  '2026-08-05': [
+    { id: 1, assistant: 'Mathebula Nicholas', initials: 'MN', position: 'Icenter', time: '08:00 - 12:00', hours: '4h', color: '#A78BFA' },
+    { id: 2, assistant: 'Jiyane Duduzile', initials: 'JD', position: 'Help desk', time: '12:00 - 16:00', hours: '4h', color: '#A78BFA' },
+    { id: 3, assistant: 'Segomotsa Lencwe', initials: 'SM', position: 'Icenter', time: '16:00 - 18:00', hours: '2h', color: '#A78BFA' },
+  ],
+  '2026-08-06': [
+    { id: 1, assistant: 'Mathebula Nicholas', initials: 'MN', position: 'Icenter', time: '09:00 - 13:00', hours: '4h', color: '#A78BFA' },
+  ],
+  '2026-08-07': [
+    { id: 1, assistant: 'Jiyane Duduzile', initials: 'JD', position: 'Help desk', time: '10:00 - 14:00', hours: '4h', color: '#A78BFA' },
+    { id: 2, assistant: 'Segomotsa Lencwe', initials: 'SM', position: 'Icenter', time: '14:00 - 18:00', hours: '4h', color: '#A78BFA' },
+  ],
+};
 
-export default function SupervisorDashboard() {
-  const router = useRouter();
-  
-  // State for the calendar
-  const [currentDate, setCurrentDate] = useState(new Date(2026, 7, 5)); 
+const formatDate = (date) => {
+  if (!date) return '';
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const day = String(date.getDate()).padStart(2, '0');
+  const month = months[date.getMonth()];
+  const year = date.getFullYear();
+  return `${month} ${day}, ${year}`;
+};
 
-  // State for the "Add Event" Modal
-  const [isEventModalVisible, setIsEventModalVisible] = useState(false);
-  const [eventDate, setEventDate] = useState('');
-  const [eventType, setEventType] = useState('Strike');
-  const [eventTime, setEventTime] = useState('');
+const MONTH_NAMES = [
+  "January", "February", "March", "April", "May", "June", 
+  "July", "August", "September", "October", "November", "December"
+];
 
-  // State for the "Assign Shift" Modal
-  const [isAssignModalVisible, setIsAssignModalVisible] = useState(false);
-  const [selectedAssistant, setSelectedAssistant] = useState(assistants[0]?.name || '');
-  const [selectedPosition, setSelectedPosition] = useState('Icenter');
-  const [shiftDate, setShiftDate] = useState('');
-  const [shiftTime, setShiftTime] = useState('');
-  const [shiftDuration, setShiftDuration] = useState('');
+// =====================================================
+// CUSTOM DATE PICKER COMPONENT
+// =====================================================
+const CustomDatePicker = ({ visible, onClose, onSelect, initialDate }) => {
+  const [viewDate, setViewDate] = useState(initialDate || new Date());
 
-  const monthNames = [
-    "January", "February", "March", "April", "May", "June", 
-    "July", "August", "September", "October", "November", "December"
-  ];
+  const year = viewDate.getFullYear();
+  const month = viewDate.getMonth();
 
-  const year = currentDate.getFullYear();
-  const month = currentDate.getMonth(); // 0-11
-
-  // Logic to generate the calendar grid
   const getDaysInMonth = (y, m) => new Date(y, m + 1, 0).getDate();
-  const getFirstDayOfMonth = (y, m) => new Date(y, m, 1).getDay(); // 0 is Sunday
+  const getFirstDayOfMonth = (y, m) => new Date(y, m, 1).getDay();
 
   const daysInMonth = getDaysInMonth(year, month);
   const firstDay = getFirstDayOfMonth(year, month);
@@ -83,50 +76,243 @@ export default function SupervisorDashboard() {
     calendarDays.push(i);
   }
 
-  // Navigation logic for 12 months
-  const handlePrevMonth = () => {
-    setCurrentDate(new Date(year, month - 1, 1));
+  const handlePrevMonth = () => setViewDate(new Date(year, month - 1, 1));
+  const handleNextMonth = () => setViewDate(new Date(year, month + 1, 1));
+
+  const handleSelectDay = (day) => {
+    if (day === '') return;
+    const selected = new Date(year, month, day);
+    onSelect(selected);
+    onClose();
   };
 
-  const handleNextMonth = () => {
-    setCurrentDate(new Date(year, month + 1, 1));
+  const isSelected = (day) => {
+    if (!initialDate || day === '') return false;
+    return (
+      day === initialDate.getDate() &&
+      month === initialDate.getMonth() &&
+      year === initialDate.getFullYear()
+    );
   };
+
+  return (
+    <Modal animationType="fade" transparent={true} visible={visible} onRequestClose={onClose}>
+      <TouchableOpacity style={styles.datePickerOverlay} activeOpacity={1} onPress={onClose}>
+        <TouchableOpacity style={styles.datePickerContent} activeOpacity={1} onPress={(e) => e.stopPropagation()}>
+          <View style={styles.datePickerHeader}>
+            <Text style={styles.datePickerTitle}>Select Date</Text>
+            <TouchableOpacity onPress={onClose}>
+              <Ionicons name="close-circle" size={26} color="#A0AEC0" />
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.datePickerNav}>
+            <TouchableOpacity style={styles.datePickerNavBtn} onPress={handlePrevMonth}>
+              <Ionicons name="chevron-back" size={18} color="#1E3A8A" />
+            </TouchableOpacity>
+            <Text style={styles.datePickerMonthText}>{MONTH_NAMES[month]} {year}</Text>
+            <TouchableOpacity style={styles.datePickerNavBtn} onPress={handleNextMonth}>
+              <Ionicons name="chevron-forward" size={18} color="#1E3A8A" />
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.datePickerDaysRow}>
+            {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, i) => (
+              <Text key={i} style={styles.datePickerDayLabel}>{d}</Text>
+            ))}
+          </View>
+
+          <View style={styles.datePickerGrid}>
+            {calendarDays.map((day, index) => (
+              <TouchableOpacity key={index} style={styles.datePickerCell} onPress={() => handleSelectDay(day)} disabled={day === ''}>
+                {day !== '' && (
+                  <View style={[styles.datePickerDateCircle, isSelected(day) && styles.datePickerSelectedCircle]}>
+                    <Text style={[styles.datePickerDateText, isSelected(day) && styles.datePickerSelectedText]}>{day}</Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          <TouchableOpacity style={styles.datePickerCancelBtn} onPress={onClose}>
+            <Text style={styles.datePickerCancelText}>Cancel</Text>
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </TouchableOpacity>
+    </Modal>
+  );
+};
+
+const AssistantCard = ({ item }) => (
+  <View style={styles.assistantCard}>
+    <View style={[styles.avatar, { backgroundColor: item.color }]}>
+      <Text style={styles.avatarText}>{item.initials}</Text>
+    </View>
+    <View style={styles.assistantInfo}>
+      <Text style={styles.assistantName}>{item.name}</Text>
+      <Text style={styles.assistantRole}>{item.role}</Text>
+    </View>
+    <View style={[styles.statusBadge, item.status === 'PENDING' && styles.statusBadgePending]}>
+      <Text style={[styles.statusText, item.status === 'PENDING' && styles.statusTextPending]}>{item.status}</Text>
+    </View>
+  </View>
+);
+
+export default function SupervisorDashboard() {
+  const router = useRouter();
+  
+  const [currentDate, setCurrentDate] = useState(new Date(2026, 7, 5)); 
+  
+  // STATE: Shift Records and Events
+  const [shiftRecords, setShiftRecords] = useState(initialShiftRecords);
+  const [events, setEvents] = useState({}); 
+
+  // Add Event Modal
+  const [isEventModalVisible, setIsEventModalVisible] = useState(false);
+  const [eventDate, setEventDate] = useState(null);
+  const [showEventDatePicker, setShowEventDatePicker] = useState(false);
+  const [eventType, setEventType] = useState('Strike');
+  const [eventTime, setEventTime] = useState('');
+
+  // Assign Shift Modal
+  const [isAssignModalVisible, setIsAssignModalVisible] = useState(false);
+  const [selectedAssistant, setSelectedAssistant] = useState(assistants[0]?.name || '');
+  const [selectedPosition, setSelectedPosition] = useState('Icenter');
+  const [shiftDate, setShiftDate] = useState(null);
+  const [showShiftDatePicker, setShowShiftDatePicker] = useState(false);
+  const [shiftTime, setShiftTime] = useState('');
+  const [shiftDuration, setShiftDuration] = useState('');
+
+  // Day Details Modal
+  const [isDayModalVisible, setIsDayModalVisible] = useState(false);
+  const [selectedDay, setSelectedDay] = useState(null);
+
+  const monthNames = MONTH_NAMES;
+  const year = currentDate.getFullYear();
+  const month = currentDate.getMonth();
+
+  const getDaysInMonth = (y, m) => new Date(y, m + 1, 0).getDate();
+  const getFirstDayOfMonth = (y, m) => new Date(y, m, 1).getDay();
+
+  const daysInMonth = getDaysInMonth(year, month);
+  const firstDay = getFirstDayOfMonth(year, month);
+
+  const calendarDays = [];
+  for (let i = 0; i < firstDay; i++) calendarDays.push('');
+  for (let i = 1; i <= daysInMonth; i++) calendarDays.push(i);
+
+  const handlePrevMonth = () => setCurrentDate(new Date(year, month - 1, 1));
+  const handleNextMonth = () => setCurrentDate(new Date(year, month + 1, 1));
 
   const isToday = (day) => {
     const today = new Date(2026, 7, 5); 
     return day === today.getDate() && month === today.getMonth() && year === today.getFullYear();
   };
 
-  // Handle Add Event Submission
+  // Format Date Key Helper
+  const getDateKey = (day, m = month, y = year) => {
+    const dayStr = String(day).padStart(2, '0');
+    const monthStr = String(m + 1).padStart(2, '0');
+    return `${y}-${monthStr}-${dayStr}`;
+  };
+
+  const handleDayPress = (day) => {
+    if (day === '') return;
+    const dateKey = getDateKey(day);
+    
+    setSelectedDay({
+      day: day,
+      month: monthNames[month],
+      year: year,
+      dateKey: dateKey,
+      shifts: shiftRecords[dateKey] || [],
+      events: events[dateKey] || [],
+    });
+    setIsDayModalVisible(true);
+  };
+
+  const handleEventDateSelect = (date) => setEventDate(date);
+  const handleShiftDateSelect = (date) => setShiftDate(date);
+
+  // SAVE NEW EVENT
   const handleAddEvent = () => {
     if (!eventDate || !eventTime) {
       alert("Please fill in the date and time of the event.");
       return;
     }
-    alert(`Event Added!\nDate: ${eventDate}\nType: ${eventType}\nTime: ${eventTime}`);
     
-    // Reset form and close modal
-    setEventDate('');
+    const m = eventDate.getMonth();
+    const y = eventDate.getFullYear();
+    const dateKey = getDateKey(eventDate.getDate(), m, y);
+    
+    const newEvent = {
+      id: Date.now(),
+      type: eventType,
+      time: eventTime,
+    };
+
+    setEvents(prev => ({
+      ...prev,
+      [dateKey]: [...(prev[dateKey] || []), newEvent]
+    }));
+
+    alert(`Event Added!\nDate: ${formatDate(eventDate)}\nType: ${eventType}\nTime: ${eventTime}`);
+    
+    setEventDate(null);
     setEventType('Strike');
     setEventTime('');
     setIsEventModalVisible(false);
   };
 
-  // Handle Assign Shift Submission
+  // SAVE NEW SHIFT
   const handleAssignShift = () => {
     if (!shiftDate || !shiftTime || !shiftDuration) {
       alert("Please fill in all fields including the date.");
       return;
     }
-    alert(`Shift Assigned!\nAssistant: ${selectedAssistant}\nPosition: ${selectedPosition}\nDate: ${shiftDate}\nTime: ${shiftTime}\nDuration: ${shiftDuration} hours`);
+
+    const m = shiftDate.getMonth();
+    const y = shiftDate.getFullYear();
+    const dateKey = getDateKey(shiftDate.getDate(), m, y);
+
+    const selectedAsst = assistants.find(a => a.name === selectedAssistant) || assistants[0];
     
-    // Reset form and close modal
+    const newShift = {
+      id: Date.now(),
+      assistant: selectedAssistant,
+      initials: selectedAsst.initials,
+      position: selectedPosition,
+      time: shiftTime,
+      hours: `${shiftDuration}h`,
+      color: selectedAsst.color,
+    };
+
+    setShiftRecords(prev => ({
+      ...prev,
+      [dateKey]: [...(prev[dateKey] || []), newShift]
+    }));
+
+    alert(`Shift Assigned!\nAssistant: ${selectedAssistant}\nPosition: ${selectedPosition}\nDate: ${formatDate(shiftDate)}\nTime: ${shiftTime}\nDuration: ${shiftDuration} hours`);
+    
     setSelectedPosition('Icenter');
-    setShiftDate('');
+    setShiftDate(null);
     setShiftTime('');
     setShiftDuration('');
     setIsAssignModalVisible(false);
   };
+
+  const getTotalHours = () => {
+    if (!selectedDay || !selectedDay.shifts) return 0;
+    return selectedDay.shifts.reduce((total, shift) => {
+      const hours = parseFloat(shift.hours.replace('h', ''));
+      return total + hours;
+    }, 0);
+  };
+
+  // NEW: Check if the selected day has an event that prevents shift assignment
+  const hasClosingEvent = selectedDay && selectedDay.events && selectedDay.events.some(
+    event => event.type === 'Strike' || event.type === 'Library Closure'
+  );
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
@@ -146,7 +332,7 @@ export default function SupervisorDashboard() {
           <TouchableOpacity style={styles.iconButton}>
             <Ionicons name="notifications-outline" size={22} color="#FFFFFF" />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.iconButton} onPress={() => router.replace('/logIn')}>
+          <TouchableOpacity style={styles.iconButton} onPress={() => router.push('/signOut')}>
             <Ionicons name="log-out-outline" size={22} color="#FFFFFF" />
           </TouchableOpacity>
         </View>
@@ -154,7 +340,6 @@ export default function SupervisorDashboard() {
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         
-        {/* Portal Title */}
         <View style={styles.portalHeader}>
           <Ionicons name="desktop-outline" size={16} color="#1E3A8A" style={styles.portalIcon} />
           <Text style={styles.portalTitle}>SUPERVISOR PORTAL</Text>
@@ -164,7 +349,7 @@ export default function SupervisorDashboard() {
           Manage student shifts and academic closures for the current term.
         </Text>
 
-        {/* Calendar Card */}
+        {/* CALENDAR CARD */}
         <View style={styles.calendarCard}>
           <View style={styles.calendarHeader}>
             <View>
@@ -188,18 +373,42 @@ export default function SupervisorDashboard() {
           </View>
 
           <View style={styles.calendarGrid}>
-            {calendarDays.map((day, index) => (
-              <View key={index} style={styles.calendarCell}>
-                {day !== '' && (
-                  <View style={[styles.dateCircle, isToday(day) && styles.activeDate]}>
-                    <Text style={[styles.dateText, isToday(day) && styles.activeDateText]}>
-                      {day}
-                    </Text>
-                  </View>
-                )}
-                {isToday(day) && <Text style={styles.todayLabel}>TODAY</Text>}
-              </View>
-            ))}
+            {calendarDays.map((day, index) => {
+              const dateKey = day !== '' ? getDateKey(day) : null;
+              const hasShift = dateKey && shiftRecords[dateKey] && shiftRecords[dateKey].length > 0;
+              const dayEvents = dateKey && events[dateKey] ? events[dateKey] : [];
+              const hasEvent = dayEvents.length > 0;
+
+              return (
+                <TouchableOpacity 
+                  key={index} 
+                  style={styles.calendarCell}
+                  onPress={() => handleDayPress(day)}
+                  disabled={day === ''}
+                  activeOpacity={0.7}
+                >
+                  {day !== '' && (
+                    <View style={[styles.dateCircle, isToday(day) && styles.activeDate]}>
+                      <Text style={[styles.dateText, isToday(day) && styles.activeDateText]}>
+                        {day}
+                      </Text>
+                    </View>
+                  )}
+                  
+                  {/* INDICATOR DOTS */}
+                  {day !== '' && (hasShift || hasEvent) && (
+                    <View style={styles.dotContainer}>
+                      {hasShift && <View style={[styles.dot, { backgroundColor: '#2563EB' }]} />}
+                      {dayEvents.map(e => (
+                        <View key={e.id} style={[styles.dot, { backgroundColor: e.type === 'Strike' ? '#1A202C' : '#DC2626' }]} />
+                      ))}
+                    </View>
+                  )}
+                  
+                  {isToday(day) && <Text style={styles.todayLabel}>TODAY</Text>}
+                </TouchableOpacity>
+              );
+            })}
           </View>
 
           <View style={styles.legendRow}>
@@ -209,7 +418,7 @@ export default function SupervisorDashboard() {
             </View>
             <View style={styles.legendItem}>
               <View style={[styles.legendDot, { backgroundColor: '#1A202C' }]} />
-              <Text style={styles.legendText}>Holiday</Text>
+              <Text style={styles.legendText}>Strike</Text>
             </View>
             <View style={styles.legendItem}>
               <View style={[styles.legendDot, { backgroundColor: '#2563EB' }]} />
@@ -218,7 +427,6 @@ export default function SupervisorDashboard() {
           </View>
         </View>
 
-        {/* Assignments Section */}
         <View style={styles.sectionHeader}>
           <View style={styles.sectionTitleContainer}>
             <Ionicons name="people-outline" size={18} color="#1E3A8A" style={styles.sectionIcon} />
@@ -233,7 +441,6 @@ export default function SupervisorDashboard() {
           <AssistantCard key={item.id} item={item} />
         ))}
 
-        {/* Total Scheduled Card */}
         <View style={styles.scheduledCard}>
           <View style={styles.scheduledIconContainer}>
             <Ionicons name="time-outline" size={20} color="#1E3A8A" />
@@ -242,7 +449,6 @@ export default function SupervisorDashboard() {
           <Text style={styles.scheduledValue}>h</Text>
         </View>
 
-        {/* August 5 Details Card */}
         <View style={styles.detailsCard}>
           <View style={styles.detailsHeader}>
             <View style={styles.detailsIconContainer}>
@@ -261,7 +467,6 @@ export default function SupervisorDashboard() {
           </Text>
 
           <View style={styles.actionButtonsRow}>
-            {/* Assign Button triggers Assign Modal */}
             <TouchableOpacity 
               style={styles.assignButton} 
               onPress={() => setIsAssignModalVisible(true)}
@@ -270,7 +475,6 @@ export default function SupervisorDashboard() {
               <Text style={styles.assignButtonText}>Assign</Text>
             </TouchableOpacity>
             
-            {/* Add Event Button triggers Event Modal */}
             <TouchableOpacity 
               style={styles.addEventButton} 
               onPress={() => setIsEventModalVisible(true)}
@@ -283,18 +487,16 @@ export default function SupervisorDashboard() {
 
       </ScrollView>
 
-      {/* --- UPDATED BOTTOM NAVIGATION --- */}
+      {/* --- BOTTOM NAVIGATION --- */}
       <View style={styles.bottomNav}>
-        {/* Home Tab (Active) */}
-       <TouchableOpacity 
-            style={styles.navItem} 
-            onPress={() => router.push('/supervisorDash')}
-          >
-            <Ionicons name="grid-outline" size={24} color="#6B7280" />
-            <Text style={styles.navText}>Home</Text>
+        <TouchableOpacity 
+          style={styles.navItem} 
+          onPress={() => router.push('/supervisorDash')}
+        >
+          <Ionicons name="grid-outline" size={24} color="#6B7280" />
+          <Text style={styles.navText}>Home</Text>
         </TouchableOpacity>
         
-        {/* Requests Tab */}
         <TouchableOpacity style={styles.navItem} onPress={() => router.push('/supRequest')}>
           <View style={styles.navIconContainer}>
             <Ionicons name="document-text-outline" size={24} color="#6B7280" />
@@ -305,18 +507,153 @@ export default function SupervisorDashboard() {
           <Text style={styles.navText}>Requests</Text>
         </TouchableOpacity>
 
-        {/* Calendar Tab */}
         <TouchableOpacity style={styles.navItem}>
           <Ionicons name="calendar-outline" size={24} color="#6B7280" />
           <Text style={styles.navText}>Calendar</Text>
         </TouchableOpacity>
 
-        {/* Reports Tab */}
         <TouchableOpacity style={styles.navItem} onPress={() => router.push('/supReport')}>
           <Ionicons name="bar-chart-outline" size={24} color="#6B7280" />
           <Text style={styles.navText}>Reports</Text>
         </TouchableOpacity>
       </View>
+
+      {/* --- DAY DETAILS MODAL --- */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={isDayModalVisible}
+        onRequestClose={() => setIsDayModalVisible(false)}
+      >
+        <KeyboardAvoidingView 
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.modalOverlay}
+        >
+          <View style={styles.dayModalContent}>
+            <View style={styles.modalHeader}>
+              <View>
+                <Text style={styles.modalTitle}>
+                  {selectedDay ? `${selectedDay.month} ${selectedDay.day}, ${selectedDay.year}` : ''}
+                </Text>
+                <Text style={styles.modalSubtitle}>
+                  {selectedDay && (selectedDay.shifts.length > 0 || selectedDay.events.length > 0)
+                    ? `${selectedDay.shifts.length} shift(s) & ${selectedDay.events.length} event(s)`
+                    : 'Nothing scheduled'}
+                </Text>
+              </View>
+              <TouchableOpacity onPress={() => setIsDayModalVisible(false)}>
+                <Ionicons name="close-circle" size={28} color="#A0AEC0" />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.totalHoursCard}>
+              <View style={styles.totalHoursIconContainer}>
+                <Ionicons name="time-outline" size={20} color="#1E3A8A" />
+              </View>
+              <View style={styles.totalHoursTextContainer}>
+                <Text style={styles.totalHoursLabel}>TOTAL WORKING HOURS</Text>
+                <Text style={styles.totalHoursValue}>{getTotalHours()}h</Text>
+              </View>
+            </View>
+
+            <ScrollView style={styles.shiftsList} showsVerticalScrollIndicator={false}>
+              
+              {/* EVENTS SECTION */}
+              {selectedDay && selectedDay.events.length > 0 && (
+                <View style={styles.sectionContainer}>
+                  <Text style={styles.sectionHeaderTitle}>EVENTS</Text>
+                  {selectedDay.events.map((event) => (
+                    <View key={event.id} style={styles.eventCard}>
+                      <View style={styles.eventCardHeader}>
+                        <Ionicons 
+                          name={event.type === 'Strike' ? 'alert-circle' : 'library'} 
+                          size={18} 
+                          color={event.type === 'Strike' ? '#1A202C' : '#DC2626'} 
+                          style={{ marginRight: 8 }}
+                        />
+                        <Text style={styles.eventTypeText}>{event.type}</Text>
+                      </View>
+                      <View style={styles.shiftTimeRow}>
+                        <Ionicons name="time-outline" size={14} color="#4A5568" style={{ marginRight: 6 }} />
+                        <Text style={styles.shiftTimeText}>{event.time}</Text>
+                      </View>
+                    </View>
+                  ))}
+                </View>
+              )}
+
+              {/* SHIFTS SECTION */}
+              {selectedDay && selectedDay.shifts.length > 0 ? (
+                selectedDay.shifts.map((shift) => (
+                  <View key={shift.id} style={styles.shiftCard}>
+                    <View style={styles.shiftHeader}>
+                      <View style={styles.shiftHeaderLeft}>
+                        <View style={[styles.shiftAvatar, { backgroundColor: shift.color }]}>
+                          <Text style={styles.shiftAvatarText}>{shift.initials}</Text>
+                        </View>
+                        <View>
+                          <Text style={styles.shiftAssistantName}>{shift.assistant}</Text>
+                          <View style={styles.shiftPositionRow}>
+                            <Ionicons name="location-outline" size={12} color="#718096" />
+                            <Text style={styles.shiftPosition}>{shift.position}</Text>
+                          </View>
+                        </View>
+                      </View>
+                      <View style={styles.shiftHoursBadge}>
+                        <Text style={styles.shiftHoursText}>{shift.hours}</Text>
+                      </View>
+                    </View>
+                    <View style={styles.shiftTimeRow}>
+                      <Ionicons name="time-outline" size={14} color="#4A5568" style={{ marginRight: 6 }} />
+                      <Text style={styles.shiftTimeText}>{shift.time}</Text>
+                    </View>
+                  </View>
+                ))
+              ) : (
+                selectedDay && selectedDay.events.length === 0 && (
+                  <View style={styles.emptyState}>
+                    <Ionicons name="calendar-outline" size={48} color="#CBD5E0" />
+                    <Text style={styles.emptyStateText}>Nothing scheduled for this day</Text>
+                  </View>
+                )
+              )}
+            </ScrollView>
+
+            <View style={styles.modalActions}>
+              <TouchableOpacity 
+                style={styles.closeModalButton} 
+                onPress={() => setIsDayModalVisible(false)}
+              >
+                <Text style={styles.closeModalButtonText}>Close</Text>
+              </TouchableOpacity>
+              
+              {/* UPDATED: Assign Shift Button with Disabled State */}
+              <TouchableOpacity 
+                style={[styles.assignModalButton, hasClosingEvent && styles.disabledButton]} 
+                onPress={() => {
+                  if (hasClosingEvent) return;
+                  setIsDayModalVisible(false);
+                  setIsAssignModalVisible(true);
+                }}
+                disabled={hasClosingEvent}
+              >
+                <Ionicons 
+                  name="add-outline" 
+                  size={18} 
+                  color={hasClosingEvent ? '#E2E8F0' : '#FFFFFF'} 
+                  style={{ marginRight: 6 }} 
+                />
+                <Text style={[
+                  styles.assignModalButtonText, 
+                  hasClosingEvent && { color: '#E2E8F0' }
+                ]}>
+                  Assign Shift
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
 
       {/* --- ADD EVENT MODAL --- */}
       <Modal
@@ -338,16 +675,16 @@ export default function SupervisorDashboard() {
             </View>
 
             <Text style={styles.inputLabel}>Date of Event</Text>
-            <View style={styles.inputWrapper}>
+            <TouchableOpacity 
+              style={styles.inputWrapper} 
+              onPress={() => setShowEventDatePicker(true)}
+            >
               <Ionicons name="calendar-outline" size={18} color="#A0AEC0" style={styles.inputIcon} />
-              <TextInput
-                style={styles.input}
-                placeholder="e.g. Aug 05, 2026"
-                placeholderTextColor="#A0AEC0"
-                value={eventDate}
-                onChangeText={setEventDate}
-              />
-            </View>
+              <Text style={[styles.input, !eventDate && { color: '#A0AEC0' }]}>
+                {eventDate ? formatDate(eventDate) : 'Tap to select a date'}
+              </Text>
+              <Ionicons name="chevron-down" size={18} color="#A0AEC0" />
+            </TouchableOpacity>
 
             <Text style={styles.inputLabel}>Event Type</Text>
             <View style={styles.pickerWrapper}>
@@ -433,16 +770,16 @@ export default function SupervisorDashboard() {
             </View>
 
             <Text style={styles.inputLabel}>Date of Shift</Text>
-            <View style={styles.inputWrapper}>
+            <TouchableOpacity 
+              style={styles.inputWrapper} 
+              onPress={() => setShowShiftDatePicker(true)}
+            >
               <Ionicons name="calendar-outline" size={18} color="#A0AEC0" style={styles.inputIcon} />
-              <TextInput
-                style={styles.input}
-                placeholder="e.g. Aug 05, 2026"
-                placeholderTextColor="#A0AEC0"
-                value={shiftDate}
-                onChangeText={setShiftDate}
-              />
-            </View>
+              <Text style={[styles.input, !shiftDate && { color: '#A0AEC0' }]}>
+                {shiftDate ? formatDate(shiftDate) : 'Tap to select a date'}
+              </Text>
+              <Ionicons name="chevron-down" size={18} color="#A0AEC0" />
+            </TouchableOpacity>
 
             <Text style={styles.inputLabel}>Shift Time</Text>
             <View style={styles.inputWrapper}>
@@ -481,6 +818,20 @@ export default function SupervisorDashboard() {
         </KeyboardAvoidingView>
       </Modal>
 
+      {/* --- CUSTOM DATE PICKERS --- */}
+      <CustomDatePicker
+        visible={showEventDatePicker}
+        onClose={() => setShowEventDatePicker(false)}
+        onSelect={handleEventDateSelect}
+        initialDate={eventDate}
+      />
+      <CustomDatePicker
+        visible={showShiftDatePicker}
+        onClose={() => setShowShiftDatePicker(false)}
+        onSelect={handleShiftDateSelect}
+        initialDate={shiftDate}
+      />
+
     </SafeAreaView>
   );
 }
@@ -500,6 +851,7 @@ const styles = StyleSheet.create({
   portalTitle: { fontSize: 11, fontWeight: '800', color: '#1E3A8A', letterSpacing: 0.5 },
   pageTitle: { fontSize: 26, fontWeight: '800', color: '#1A202C', marginBottom: 6 },
   pageSubtitle: { fontSize: 14, color: '#4A5568', marginBottom: 20 },
+  
   calendarCard: { backgroundColor: '#FFFFFF', borderRadius: 12, padding: 16, marginBottom: 24, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 2 },
   calendarHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
   calendarMonth: { fontSize: 18, fontWeight: '700', color: '#1A202C' },
@@ -509,12 +861,17 @@ const styles = StyleSheet.create({
   daysRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10 },
   dayLabel: { width: '14%', textAlign: 'center', fontSize: 12, fontWeight: '600', color: '#718096' },
   calendarGrid: { flexDirection: 'row', flexWrap: 'wrap' },
-  calendarCell: { width: '14%', alignItems: 'center', marginBottom: 12, height: 40, justifyContent: 'center' },
+  calendarCell: { width: '14%', alignItems: 'center', marginBottom: 12, height: 44, justifyContent: 'flex-start' },
   dateCircle: { width: 32, height: 32, borderRadius: 16, justifyContent: 'center', alignItems: 'center' },
   activeDate: { backgroundColor: '#1E3A8A' },
   dateText: { fontSize: 13, fontWeight: '600', color: '#1A202C' },
   activeDateText: { color: '#FFFFFF' },
   todayLabel: { fontSize: 8, fontWeight: '800', color: '#1E3A8A', position: 'absolute', bottom: -6 },
+  
+  // Indicator Dot Styles
+  dotContainer: { flexDirection: 'row', marginTop: 2, height: 6, alignItems: 'center' },
+  dot: { width: 5, height: 5, borderRadius: 2.5, marginHorizontal: 1 },
+
   legendRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 10, borderTopWidth: 1, borderTopColor: '#E2E8F0', paddingTop: 16 },
   legendItem: { flexDirection: 'row', alignItems: 'center' },
   legendDot: { width: 8, height: 8, borderRadius: 4, marginRight: 6 },
@@ -553,56 +910,14 @@ const styles = StyleSheet.create({
   addEventButton: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: 'transparent', borderWidth: 1, borderColor: '#FFFFFF', borderRadius: 8, paddingVertical: 14, marginLeft: 8 },
   addEventButtonText: { fontSize: 14, fontWeight: '700', color: '#FFFFFF' },
   
-  // --- UPDATED BOTTOM NAVIGATION STYLES ---
-  bottomNav: { 
-    position: 'absolute', 
-    bottom: 0, 
-    left: 0, 
-    right: 0, 
-    flexDirection: 'row', 
-    backgroundColor: '#FFFFFF', 
-    borderTopWidth: 1, 
-    borderTopColor: '#E5E7EB', 
-    paddingVertical: 10, 
-    paddingBottom: Platform.OS === 'ios' ? 25 : 10, 
-    justifyContent: 'space-around', 
-    alignItems: 'center' 
-  },
-  navItem: { 
-    alignItems: 'center', 
-    justifyContent: 'center' 
-  },
-  navIconContainer: { 
-    position: 'relative' 
-  },
-  navBadge: { 
-    position: 'absolute', 
-    top: -4, 
-    right: -6, 
-    backgroundColor: '#EF4444', 
-    borderRadius: 8, 
-    width: 16, 
-    height: 16, 
-    justifyContent: 'center', 
-    alignItems: 'center' 
-  },
-  navBadgeText: { 
-    color: '#FFFFFF', 
-    fontSize: 10, 
-    fontWeight: 'bold' 
-  },
-  navText: { 
-    fontSize: 12, 
-    color: '#6B7280', 
-    marginTop: 4, 
-    fontWeight: '500' 
-  },
-  navTextActive: { 
-    color: '#2563EB', 
-    fontWeight: '700' 
-  },
+  bottomNav: { position: 'absolute', bottom: 0, left: 0, right: 0, flexDirection: 'row', backgroundColor: '#FFFFFF', borderTopWidth: 1, borderTopColor: '#E5E7EB', paddingVertical: 10, paddingBottom: Platform.OS === 'ios' ? 25 : 10, justifyContent: 'space-around', alignItems: 'center' },
+  navItem: { alignItems: 'center', justifyContent: 'center' },
+  navIconContainer: { position: 'relative' },
+  navBadge: { position: 'absolute', top: -4, right: -6, backgroundColor: '#EF4444', borderRadius: 8, width: 16, height: 16, justifyContent: 'center', alignItems: 'center' },
+  navBadgeText: { color: '#FFFFFF', fontSize: 10, fontWeight: 'bold' },
+  navText: { fontSize: 12, color: '#6B7280', marginTop: 4, fontWeight: '500' },
+  navTextActive: { color: '#2563EB', fontWeight: '700' },
 
-  // --- Modal Styles (Shared for both modals) ---
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
@@ -632,6 +947,11 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: '800',
     color: '#1A202C',
+  },
+  modalSubtitle: {
+    fontSize: 13,
+    color: '#718096',
+    marginTop: 2,
   },
   inputLabel: {
     fontSize: 14,
@@ -700,5 +1020,283 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '700',
     color: '#FFFFFF',
+  },
+
+  dayModalContent: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 20,
+    width: '100%',
+    maxWidth: 400,
+    maxHeight: '80%',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  totalHoursCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#EFF6FF',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
+  },
+  totalHoursIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#DBEAFE',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  totalHoursTextContainer: {
+    flex: 1,
+  },
+  totalHoursLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#1E3A8A',
+    letterSpacing: 0.5,
+    marginBottom: 2,
+  },
+  totalHoursValue: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: '#1A202C',
+  },
+  shiftsList: {
+    maxHeight: 300,
+    marginBottom: 16,
+  },
+  shiftCard: {
+    backgroundColor: '#F7FAFC',
+    borderRadius: 10,
+    padding: 14,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  shiftHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  shiftHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  shiftAvatar: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 10,
+  },
+  shiftAvatarText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  shiftAssistantName: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#1A202C',
+    marginBottom: 2,
+  },
+  shiftPositionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  shiftPosition: {
+    fontSize: 11,
+    color: '#718096',
+    marginLeft: 4,
+  },
+  shiftHoursBadge: {
+    backgroundColor: '#1E3A8A',
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+  },
+  shiftHoursText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  shiftTimeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  shiftTimeText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#4A5568',
+  },
+  
+  // Event Card Styles
+  sectionContainer: { marginBottom: 16 },
+  sectionHeaderTitle: { fontSize: 12, fontWeight: '800', color: '#1E3A8A', letterSpacing: 0.5, marginBottom: 8 },
+  eventCard: { backgroundColor: '#FEF2F2', borderRadius: 10, padding: 14, marginBottom: 10, borderWidth: 1, borderColor: '#FECACA' },
+  eventCardHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
+  eventTypeText: { fontSize: 14, fontWeight: '700', color: '#1A202C' },
+
+  emptyState: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 30,
+  },
+  emptyStateText: {
+    fontSize: 13,
+    color: '#A0AEC0',
+    marginTop: 10,
+    fontStyle: 'italic',
+  },
+  closeModalButton: {
+    flex: 1,
+    backgroundColor: '#EDF2F7',
+    borderRadius: 8,
+    paddingVertical: 14,
+    alignItems: 'center',
+    marginRight: 8,
+  },
+  closeModalButtonText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#4A5568',
+  },
+  assignModalButton: {
+    flex: 1,
+    flexDirection: 'row',
+    backgroundColor: '#1E3A8A',
+    borderRadius: 8,
+    paddingVertical: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 8,
+  },
+  assignModalButtonText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  
+  // NEW: Disabled Button Style
+  disabledButton: {
+    backgroundColor: '#A0AEC0',
+    opacity: 0.7,
+  },
+
+  // --- Custom Date Picker Styles ---
+  datePickerOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  datePickerContent: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 16,
+    width: '100%',
+    maxWidth: 340,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  datePickerHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  datePickerTitle: {
+    fontSize: 17,
+    fontWeight: '800',
+    color: '#1A202C',
+  },
+  datePickerNav: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  datePickerNavBtn: {
+    padding: 8,
+    backgroundColor: '#EDF2F7',
+    borderRadius: 6,
+  },
+  datePickerMonthText: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#1A202C',
+  },
+  datePickerDaysRow: {
+    flexDirection: 'row',
+    marginBottom: 8,
+  },
+  datePickerDayLabel: {
+    flex: 1,
+    textAlign: 'center',
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#718096',
+  },
+  datePickerGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginBottom: 16,
+  },
+  datePickerCell: {
+    width: '14.28%',
+    aspectRatio: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  datePickerDateCircle: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  datePickerSelectedCircle: {
+    backgroundColor: '#1E3A8A',
+  },
+  datePickerDateText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#1A202C',
+  },
+  datePickerSelectedText: {
+    color: '#FFFFFF',
+    fontWeight: '700',
+  },
+  datePickerCancelBtn: {
+    backgroundColor: '#EDF2F7',
+    borderRadius: 8,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  datePickerCancelText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#4A5568',
   },
 });

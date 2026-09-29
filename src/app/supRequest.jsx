@@ -1,4 +1,4 @@
-// src/app/supervisorDash.jsx
+// src/app/supRequest.jsx
 import React, { useState } from 'react';
 import {
   View,
@@ -7,11 +7,14 @@ import {
   ScrollView,
   TouchableOpacity,
   TextInput,
-  Platform, // Added Platform import
+  Platform,
+  Image, // Added Image import
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+
+import logoImg from "@/assets/images/logo.png"; // Same logo path as supervisorDash.jsx
 
 // Reusable Submission Card Component
 const SubmissionCard = ({ item, onApprove, onReject }) => (
@@ -90,7 +93,7 @@ const SubmissionCard = ({ item, onApprove, onReject }) => (
   </View>
 );
 
-export default function SupervisorDashboard() {
+export default function SupervisorRequests() {
   const router = useRouter();
 
   // Initial State for Submissions
@@ -99,7 +102,7 @@ export default function SupervisorDashboard() {
       id: 1,
       name: 'Hlongwane Jan',
       initials: 'HJ',
-      avatarColor: '#A78BFA', // Purple
+      avatarColor: '#A78BFA',
       type: 'SHIFT SWAP',
       reason: 'Requesting to swap Friday Evening (6PM) shift with Saturday Morning (8AM) due to academic exam preparation.',
       date: 'Oct 27 - Oct 28',
@@ -109,7 +112,7 @@ export default function SupervisorDashboard() {
       id: 2,
       name: 'Jordan Smith',
       initials: 'JS',
-      avatarColor: '#3B82F6', // Blue
+      avatarColor: '#3B82F6',
       type: 'LEAVE',
       reason: 'Emergency family leave requested for three days. Documents will be uploaded to the portal by end of week.',
       date: 'Oct 30 - Nov 02',
@@ -129,23 +132,26 @@ export default function SupervisorDashboard() {
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
       
-      {/* Top Header (No Back Arrow) */}
+      {/* Top Header (UPDATED to match supervisorDash.jsx) */}
       <View style={styles.header}>
         <View style={styles.headerLeft}>
-          <View style={styles.logoContainer}>
-            <Ionicons name="school" size={20} color="#FFFFFF" />
-          </View>
-          <View>
-            <Text style={styles.headerTitle}>Supervisor Dashboard</Text>
+          <Image
+            source={logoImg}
+            style={styles.iconContainer}
+            resizeMode="contain" 
+          />
+          <View style={styles.headerTextContainer}>
+            <Text style={styles.headerTitle}>StudentAssistance</Text>
             <Text style={styles.headerSubtitle}>ABSENCE TRACKER</Text>
           </View>
         </View>
+
         <View style={styles.headerRight}>
           <TouchableOpacity style={styles.iconButton}>
-            <Ionicons name="notifications-outline" size={22} color="#FFFFFF" />
+            <Ionicons name="notifications-outline" size={22} color="#1E3A8A" />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.iconButton} onPress={() => router.replace('/logIn')}>
-            <Ionicons name="log-out-outline" size={22} color="#FFFFFF" />
+          <TouchableOpacity style={styles.iconButton} onPress={() => router.push('/logOut')}>
+            <Ionicons name="log-out-outline" size={22} color="#1E3A8A" />
           </TouchableOpacity>
         </View>
       </View>
@@ -217,7 +223,7 @@ export default function SupervisorDashboard() {
 
       </ScrollView>
 
-      {/* --- UPDATED BOTTOM NAVIGATION --- */}
+      {/* --- BOTTOM NAVIGATION --- */}
       <View style={styles.bottomNav}>
         {/* Home Tab */}
         <TouchableOpacity 
@@ -267,37 +273,40 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#8FB3D9', 
   },
+  // --- Header (updated to match supervisorDash.jsx) ---
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 20,
-    paddingVertical: 15,
-    backgroundColor: '#1E3A8A', 
+    paddingVertical: 12,
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E2E8F0',
   },
   headerLeft: {
     flexDirection: 'row',
     alignItems: 'center',
   },
-  logoContainer: {
-    width: 36,
-    height: 36,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    borderRadius: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
+  iconContainer: {
+    width: 40,
+    height: 40,
     marginRight: 10,
+  },
+  headerTextContainer: {
+    justifyContent: 'center',
   },
   headerTitle: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: '#1A202C',
   },
   headerSubtitle: {
     fontSize: 9,
     fontWeight: '600',
-    color: '#A0C1DD',
+    color: '#718096',
     letterSpacing: 1,
+    marginTop: 2,
   },
   headerRight: {
     flexDirection: 'row',

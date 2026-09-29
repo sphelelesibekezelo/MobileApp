@@ -9,10 +9,10 @@ import {
   Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons, MaterialIcons } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 
-import logoImg from "@/assets/images/logo.png" // Ensure you have a logo image in the assets folder
+import logoImg from "@/assets/images/logo.png"; // Make sure this path is correct
 
 // Dummy data for the review list
 const requests = [
@@ -39,9 +39,7 @@ export default function SupervisorDashboard() {
       
       {/* Top Header */}
       <View style={styles.header}>
-        
-        {/* Top Header Bar */}
-        <View style={styles.header}>
+        <View style={styles.headerLeft}>
           <Image
             source={logoImg}
             style={styles.iconContainer}
@@ -54,11 +52,11 @@ export default function SupervisorDashboard() {
         </View>
 
         <View style={styles.headerRight}>
-         
           <TouchableOpacity style={styles.iconButton}>
             <Ionicons name="notifications-outline" size={22} color="#1E3A8A" />
           </TouchableOpacity>
-          {/* UPDATED: Navigates to logOut.jsx */}
+          
+          {/* Logout Button -> Navigates to logOut.jsx */}
           <TouchableOpacity style={styles.iconButton} onPress={() => router.push('/logOut')}>
             <Ionicons name="log-out-outline" size={22} color="#1E3A8A" />
           </TouchableOpacity>
@@ -140,7 +138,7 @@ export default function SupervisorDashboard() {
         <TouchableOpacity 
             style={styles.navItem} 
             onPress={() => router.push('/supRequest')}
-            >
+        >
             <View style={styles.navIconContainer}>
                 <Ionicons name="document-text-outline" size={22} color="#A0AEC0" />
                 {/* Notification Badge */}
@@ -151,20 +149,20 @@ export default function SupervisorDashboard() {
             <Text style={styles.navText}>Requests</Text>
         </TouchableOpacity>
 
-         <TouchableOpacity 
-                 style={styles.navItem} 
-                 onPress={() => router.push('/supCal')}
-            >
-             <Ionicons name="calendar-outline" size={24} color="#6B7280" />
-              <Text style={styles.navText}>Calendar</Text>
-         </TouchableOpacity>
+        <TouchableOpacity 
+            style={styles.navItem} 
+            onPress={() => router.push('/supCal')}
+        >
+          <Ionicons name="calendar-outline" size={24} color="#6B7280" />
+          <Text style={styles.navText}>Calendar</Text>
+        </TouchableOpacity>
 
         <TouchableOpacity 
             style={styles.navItem} 
             onPress={() => router.push('/supReport')}
-            >
-            <Ionicons name="bar-chart-outline" size={22} color="#A0AEC0" />
-            <Text style={styles.navText}>Reports</Text>
+        >
+          <Ionicons name="bar-chart-outline" size={22} color="#A0AEC0" />
+          <Text style={styles.navText}>Reports</Text>
         </TouchableOpacity>
       </View>
 
@@ -175,7 +173,7 @@ export default function SupervisorDashboard() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#8FB3D9', // Main light blue background
+    backgroundColor: '#8FB3D9', 
   },
   // --- Header ---
   header: {
@@ -192,14 +190,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
-  logoContainer: {
-    width: 36,
-    height: 36,
-    backgroundColor: '#1E3A8A',
-    borderRadius: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
+  iconContainer: {
+    width: 40,
+    height: 40,
     marginRight: 10,
+  },
+  headerTextContainer: {
+    justifyContent: 'center',
   },
   headerTitle: {
     fontSize: 16,
@@ -211,6 +208,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#718096',
     letterSpacing: 1,
+    marginTop: 2,
   },
   headerRight: {
     flexDirection: 'row',
@@ -222,7 +220,7 @@ const styles = StyleSheet.create({
   // --- Content ---
   scrollContent: {
     padding: 20,
-    paddingBottom: 100, // Space for the bottom nav bar
+    paddingBottom: 100, 
   },
   welcomeSection: {
     marginBottom: 24,
@@ -391,7 +389,7 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: '#E2E8F0',
     paddingVertical: 10,
-    paddingBottom: 20, // For safe area on iOS
+    paddingBottom: 20, 
     justifyContent: 'space-around',
     alignItems: 'center',
   },
