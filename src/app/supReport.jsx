@@ -1,5 +1,5 @@
 // src/app/supReport.jsx
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -9,14 +9,58 @@ import {
   TextInput,
   Platform,
   Image,
+  Modal,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import * as Print from 'expo-print';
+import * as Sharing from 'expo-sharing';
 
-import logoImg from "@/assets/images/logo.png"; // Same path as supervisorDash.jsx
+import logoImg from "@/assets/images/logo.png";
 
-// Reusable Metric Card Component
+// ---------------- MONTHLY REPORT DATA (Sample) ----------------
+const monthlyReportData = {
+  'Shoba Thabiso': {
+    studentId: 'ST-2024-001',
+    email: 'shoba.thabiso@university.edu',
+    months: [
+      { month: 'April 2026', hours: 22, leaveRequests: 1, leaveTypes: 'Sick Leave' },
+      { month: 'May 2026', hours: 24, leaveRequests: 0, leaveTypes: '-' },
+      { month: 'June 2026', hours: 18, leaveRequests: 2, leaveTypes: 'Family Emergency, Medical' },
+      { month: 'July 2026', hours: 26, leaveRequests: 1, leaveTypes: 'Study Leave' },
+      { month: 'August 2026', hours: 20, leaveRequests: 1, leaveTypes: 'Sick Leave' },
+      { month: 'September 2026', hours: 24, leaveRequests: 0, leaveTypes: '-' },
+    ],
+  },
+  'Mabaso Kganya': {
+    studentId: 'MK-2024-015',
+    email: 'mabaso.kganya@university.edu',
+    months: [
+      { month: 'April 2026', hours: 15, leaveRequests: 2, leaveTypes: 'Sick Leave, Exam Period' },
+      { month: 'May 2026', hours: 28, leaveRequests: 0, leaveTypes: '-' },
+      { month: 'June 2026', hours: 20, leaveRequests: 1, leaveTypes: 'Family Emergency' },
+      { month: 'July 2026', hours: 22, leaveRequests: 2, leaveTypes: 'Shift Swap, Medical' },
+      { month: 'August 2026', hours: 23, leaveRequests: 3, leaveTypes: 'Exam Period, Medical, Shift Swap' },
+      { month: 'September 2026', hours: 18, leaveRequests: 0, leaveTypes: '-' },
+    ],
+  },
+  'Mawelela Sibusiso': {
+    studentId: 'MS-2024-032',
+    email: 'mawelela.sibusiso@university.edu',
+    months: [
+      { month: 'April 2026', hours: 20, leaveRequests: 1, leaveTypes: 'Sick Leave' },
+      { month: 'May 2026', hours: 22, leaveRequests: 0, leaveTypes: '-' },
+      { month: 'June 2026', hours: 21, leaveRequests: 1, leaveTypes: 'Study Leave' },
+      { month: 'July 2026', hours: 19, leaveRequests: 2, leaveTypes: 'Medical, Family Emergency' },
+      { month: 'August 2026', hours: 19.2, leaveRequests: 3, leaveTypes: 'Exam Period, Shift Swap, Medical' },
+      { month: 'September 2026', hours: 24, leaveRequests: 0, leaveTypes: '-' },
+    ],
+  },
+};
+
+// ---------------- Reusable Components ----------------
 const MetricCard = ({ icon, change, label, value, isPositive }) => (
   <View style={styles.metricCard}>
     <View style={styles.metricTopRow}>
@@ -39,10 +83,8 @@ const MetricCard = ({ icon, change, label, value, isPositive }) => (
   </View>
 );
 
-// Reusable Staff Card Component
 const StaffCard = ({ item }) => (
   <View style={styles.staffCard}>
-    {/* Header Row */}
     <View style={styles.staffHeader}>
       <View style={styles.staffHeaderLeft}>
         <View style={styles.staffAvatar}>
@@ -60,7 +102,6 @@ const StaffCard = ({ item }) => (
 
     <View style={styles.divider} />
 
-    {/* Metrics Row */}
     <View style={styles.staffMetricsRow}>
       <View style={styles.staffMetric}>
         <Text style={styles.staffMetricLabel}>HOURS WORKED</Text>
@@ -77,12 +118,9 @@ const StaffCard = ({ item }) => (
         <Text style={styles.staffMetricLabel}>ICENTER</Text>
         <Text style={styles.staffMetricValue}>{item.days} days</Text>
       </View>
-      <View style={styles.staffMetric}>
-        {/* Empty view to align with the right side */}
-      </View>
+      <View style={styles.staffMetric} />
     </View>
 
-    {/* Footer Row */}
     <View style={styles.staffFooter}>
       <View style={[
         styles.statusBadge, 
@@ -107,8 +145,11 @@ const StaffCard = ({ item }) => (
   </View>
 );
 
+// ---------------- MAIN COMPONENT ----------------
 export default function SupervisorReports() {
   const router = useRouter();
+
+  const [isDownloadModalVisible, setIsDownloadModalVisible] = useState(false);
 
   const staffData = [
     {
@@ -146,23 +187,123 @@ export default function SupervisorReports() {
     },
   ];
 
+  // ---------------- Generate & Share PDF Report ----------------
+  const handleStaffSelect = async (staffName) => {
+    setIsDownloadModalVisible(false);
+
+    const report = monthlyReportData[staffName];
+    if (!report) {
+      Alert.alert('Error', 'No report data found for this assistant.');
+      return;
+    }
+
+    // Calculate totals
+    const totalHours = report.months.reduce((sum, m) => sum + m.hours, 0);
+    const totalLeaveRequests = report.months.reduce((sum, m) => sum + m.leaveRequests, 0);
+
+    // Build the HTML report
+    const htmlContent = `
+      <html>
+        <head>
+          <style>
+            body { font-family: Helvetica, Arial, sans-serif; padding: 30px; color: #1A202C; }
+            h1 { color: #1E3A8A; margin-bottom: 4px; }
+            h2 { color: #1E3A8A; margin-top: 30px; font-size: 16px; border-bottom: 2px solid #E2E8F0; padding-bottom: 6px; }
+            .subtitle { color: #718096; font-size: 12px; margin-bottom: 20px; }
+            .info-box { background: #F7FAFC; border: 1px solid #E2E8F0; border-radius: 8px; padding: 16px; margin-bottom: 20px; }
+            .info-box p { margin: 4px 0; font-size: 13px; }
+            table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+            th { background: #1E3A8A; color: #FFFFFF; padding: 10px; text-align: left; font-size: 12px; }
+            td { padding: 10px; border-bottom: 1px solid #E2E8F0; font-size: 12px; }
+            tr:nth-child(even) { background: #F7FAFC; }
+            .summary { display: flex; justify-content: space-between; margin-top: 20px; }
+            .summary-item { flex: 1; background: #EFF6FF; border: 1px solid #BFDBFE; border-radius: 8px; padding: 16px; margin-right: 10px; }
+            .summary-item:last-child { margin-right: 0; }
+            .summary-label { font-size: 10px; color: #1E3A8A; letter-spacing: 1px; font-weight: bold; }
+            .summary-value { font-size: 22px; font-weight: bold; color: #1A202C; margin-top: 4px; }
+            .footer { margin-top: 40px; font-size: 10px; color: #A0AEC0; text-align: center; }
+          </style>
+        </head>
+        <body>
+          <h1>Performance Report</h1>
+          <p class="subtitle">StudentAssistant – Absence Tracker</p>
+
+          <div class="info-box">
+            <p><strong>Student Name:</strong> ${staffName}</p>
+            <p><strong>Student ID:</strong> ${report.studentId}</p>
+            <p><strong>Email:</strong> ${report.email}</p>
+            <p><strong>Report Generated:</strong> ${new Date().toLocaleString()}</p>
+          </div>
+
+          <h2>Monthly Working Hours</h2>
+          <table>
+            <tr>
+              <th>Month</th>
+              <th>Hours Worked</th>
+              <th>Leave Requests</th>
+              <th>Type of Requests</th>
+            </tr>
+            ${report.months.map(m => `
+              <tr>
+                <td>${m.month}</td>
+                <td>${m.hours}h</td>
+                <td>${m.leaveRequests}</td>
+                <td>${m.leaveTypes}</td>
+              </tr>
+            `).join('')}
+          </table>
+
+          <h2>Summary</h2>
+          <div class="summary">
+            <div class="summary-item">
+              <div class="summary-label">TOTAL HOURS</div>
+              <div class="summary-value">${totalHours}h</div>
+            </div>
+            <div class="summary-item">
+              <div class="summary-label">TOTAL LEAVE REQUESTS</div>
+              <div class="summary-value">${totalLeaveRequests}</div>
+            </div>
+          </div>
+
+          <div class="footer">
+            This report was automatically generated by StudentAssist. For any discrepancies, contact your supervisor.
+          </div>
+        </body>
+      </html>
+    `;
+
+    try {
+      // Generate PDF
+      const { uri } = await Print.printToFileAsync({ html: htmlContent });
+
+      // Check if sharing is available
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(uri, {
+          mimeType: 'application/pdf',
+          dialogTitle: `${staffName} - Performance Report`,
+          UTI: 'com.adobe.pdf',
+        });
+      } else {
+        Alert.alert('Success', `Report generated!\n\nFile saved at: ${uri}`);
+      }
+    } catch (error) {
+      console.error('PDF generation error:', error);
+      Alert.alert('Error', 'Failed to generate the PDF report. Please try again.');
+    }
+  };
+
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
       
-      {/* Top Header (UPDATED to match supervisorDash.jsx) */}
+      {/* Top Header */}
       <View style={styles.header}>
         <View style={styles.headerLeft}>
-          <Image
-            source={logoImg}
-            style={styles.iconContainer}
-            resizeMode="contain" 
-          />
+          <Image source={logoImg} style={styles.iconContainer} resizeMode="contain" />
           <View style={styles.headerTextContainer}>
             <Text style={styles.headerTitle}>StudentAssistance</Text>
             <Text style={styles.headerSubtitle}>ABSENCE TRACKER</Text>
           </View>
         </View>
-
         <View style={styles.headerRight}>
           <TouchableOpacity style={styles.iconButton}>
             <Ionicons name="notifications-outline" size={22} color="#1E3A8A" />
@@ -183,34 +324,20 @@ export default function SupervisorReports() {
               Review and analyze student activity and work efficiency metrics for the current period.
             </Text>
           </View>
-          <TouchableOpacity style={styles.downloadButton}>
+          {/* UPDATED: Opens staff picker modal */}
+          <TouchableOpacity 
+            style={styles.downloadButton}
+            onPress={() => setIsDownloadModalVisible(true)}
+          >
             <Ionicons name="download-outline" size={20} color="#4A5568" />
           </TouchableOpacity>
         </View>
 
         {/* Metrics Cards Row */}
         <View style={styles.metricsRow}>
-          <MetricCard 
-            icon="time-outline" 
-            change="+12%" 
-            label="TOTAL HOURS" 
-            value="1,248h" 
-            isPositive={true} 
-          />
-          <MetricCard 
-            icon="document-text-outline" 
-            change="+8%" 
-            label="REQUESTS" 
-            value="4,832" 
-            isPositive={true} 
-          />
-          <MetricCard 
-            icon="pie-chart-outline" 
-            change="" 
-            label="ACTIVE REPORTS" 
-            value="8" 
-            isPositive={true} 
-          />
+          <MetricCard icon="time-outline" change="+12%" label="TOTAL HOURS" value="1,248h" isPositive={true} />
+          <MetricCard icon="document-text-outline" change="+8%" label="REQUESTS" value="4,832" isPositive={true} />
+          <MetricCard icon="pie-chart-outline" change="" label="ACTIVE REPORTS" value="8" isPositive={true} />
         </View>
 
         {/* Generate Report Button */}
@@ -273,20 +400,12 @@ export default function SupervisorReports() {
 
       {/* --- BOTTOM NAVIGATION --- */}
       <View style={styles.bottomNav}>
-        {/* Home Tab */}
-        <TouchableOpacity 
-          style={styles.navItem} 
-          onPress={() => router.push('/supervisorDash')}
-        >
+        <TouchableOpacity style={styles.navItem} onPress={() => router.push('/supervisorDash')}>
           <Ionicons name="grid-outline" size={24} color="#6B7280" />
           <Text style={styles.navText}>Home</Text>
         </TouchableOpacity>
         
-        {/* Requests Tab */}
-        <TouchableOpacity 
-          style={styles.navItem} 
-          onPress={() => router.push('/supRequest')}
-        >
+        <TouchableOpacity style={styles.navItem} onPress={() => router.push('/supRequest')}>
           <View style={styles.navIconContainer}>
             <Ionicons name="document-text-outline" size={24} color="#6B7280" />
             <View style={styles.navBadge}>
@@ -296,21 +415,66 @@ export default function SupervisorReports() {
           <Text style={styles.navText}>Requests</Text>
         </TouchableOpacity>
 
-        {/* Calendar Tab */}
-        <TouchableOpacity 
-          style={styles.navItem} 
-          onPress={() => router.push('/supCal')}
-        >
+        <TouchableOpacity style={styles.navItem} onPress={() => router.push('/supCal')}>
           <Ionicons name="calendar-outline" size={24} color="#6B7280" />
           <Text style={styles.navText}>Calendar</Text>
         </TouchableOpacity>
 
-        {/* Reports Tab (Active) */}
         <TouchableOpacity style={styles.navItem}>
           <Ionicons name="bar-chart" size={24} color="#2563EB" />
           <Text style={[styles.navText, styles.navTextActive]}>Reports</Text>
         </TouchableOpacity>
       </View>
+
+      {/* --- DOWNLOAD STAFF PICKER MODAL --- */}
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={isDownloadModalVisible}
+        onRequestClose={() => setIsDownloadModalVisible(false)}
+      >
+        <TouchableOpacity 
+          style={styles.modalOverlay} 
+          activeOpacity={1} 
+          onPress={() => setIsDownloadModalVisible(false)}
+        >
+          <TouchableOpacity 
+            style={styles.pickerModalContent} 
+            activeOpacity={1} 
+            onPress={(e) => e.stopPropagation()}
+          >
+            <View style={styles.modalHeader}>
+              <View>
+                <Text style={styles.modalTitle}>Select Assistant</Text>
+                <Text style={styles.modalSubtitle}>Choose an assistant to download their PDF report</Text>
+              </View>
+              <TouchableOpacity onPress={() => setIsDownloadModalVisible(false)}>
+                <Ionicons name="close-circle" size={28} color="#A0AEC0" />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView showsVerticalScrollIndicator={false}>
+              {staffData.map((staff) => (
+                <TouchableOpacity 
+                  key={staff.id} 
+                  style={styles.staffPickerItem}
+                  onPress={() => handleStaffSelect(staff.name)}
+                  activeOpacity={0.7}
+                >
+                  <View style={styles.pickerAvatar}>
+                    <Text style={styles.pickerAvatarText}>{staff.initials}</Text>
+                  </View>
+                  <View style={styles.pickerInfo}>
+                    <Text style={styles.pickerName}>{staff.name}</Text>
+                    <Text style={styles.pickerRole}>{staff.role}</Text>
+                  </View>
+                  <Ionicons name="download-outline" size={20} color="#1E3A8A" />
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Modal>
 
     </SafeAreaView>
   );
@@ -318,8 +482,8 @@ export default function SupervisorReports() {
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: '#8FB3D9' },
-  
-  // --- Header (updated to match supervisorDash.jsx) ---
+
+  // --- Header ---
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -330,40 +494,16 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#E2E8F0',
   },
-  headerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  iconContainer: {
-    width: 40,
-    height: 40,
-    marginRight: 10,
-  },
-  headerTextContainer: {
-    justifyContent: 'center',
-  },
-  headerTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#1A202C',
-  },
-  headerSubtitle: {
-    fontSize: 9,
-    fontWeight: '600',
-    color: '#718096',
-    letterSpacing: 1,
-    marginTop: 2,
-  },
-  headerRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  iconButton: {
-    marginLeft: 16,
-  },
+  headerLeft: { flexDirection: 'row', alignItems: 'center' },
+  iconContainer: { width: 40, height: 40, marginRight: 10 },
+  headerTextContainer: { justifyContent: 'center' },
+  headerTitle: { fontSize: 16, fontWeight: '700', color: '#1A202C' },
+  headerSubtitle: { fontSize: 9, fontWeight: '600', color: '#718096', letterSpacing: 1, marginTop: 2 },
+  headerRight: { flexDirection: 'row', alignItems: 'center' },
+  iconButton: { marginLeft: 16 },
 
   scrollContent: { padding: 20, paddingBottom: 100 },
-  
+
   // Title Section
   titleSection: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 },
   pageTitle: { fontSize: 26, fontWeight: '800', color: '#1A202C', marginBottom: 6 },
@@ -380,27 +520,22 @@ const styles = StyleSheet.create({
   metricLabel: { fontSize: 9, fontWeight: '700', color: '#718096', letterSpacing: 0.5, marginBottom: 4 },
   metricValue: { fontSize: 18, fontWeight: '800', color: '#1A202C' },
 
-  // Generate Button
   generateButton: { backgroundColor: '#2563EB', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 16, borderRadius: 8, marginBottom: 20 },
   generateButtonText: { color: '#FFFFFF', fontSize: 14, fontWeight: '700', letterSpacing: 0.5 },
 
-  // Search
   searchContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFFFFF', borderRadius: 10, paddingHorizontal: 16, height: 50, marginBottom: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 2, elevation: 1 },
   searchIcon: { marginRight: 10 },
   searchInput: { flex: 1, fontSize: 15, color: '#1A202C' },
 
-  // Filters
   filtersRow: { flexDirection: 'row', marginBottom: 24 },
   filterButton: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFFFFF', borderRadius: 8, paddingHorizontal: 16, paddingVertical: 10, marginRight: 12, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 2, elevation: 1 },
   filterText: { fontSize: 13, fontWeight: '600', color: '#4A5568' },
   filterBadge: { backgroundColor: '#1E3A8A', borderRadius: 8, width: 16, height: 16, justifyContent: 'center', alignItems: 'center', marginLeft: 6 },
   filterBadgeText: { color: '#FFFFFF', fontSize: 9, fontWeight: 'bold' },
 
-  // Section Title
   sectionHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 16 },
   sectionTitle: { fontSize: 12, fontWeight: '800', color: '#1E3A8A', letterSpacing: 0.5 },
 
-  // Staff Card
   staffCard: { backgroundColor: '#FFFFFF', borderRadius: 12, padding: 16, marginBottom: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 2 },
   staffHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
   staffHeaderLeft: { flexDirection: 'row', alignItems: 'center' },
@@ -409,14 +544,12 @@ const styles = StyleSheet.create({
   staffName: { fontSize: 15, fontWeight: '700', color: '#1A202C' },
   staffRole: { fontSize: 10, fontWeight: '600', color: '#718096', letterSpacing: 0.5, marginTop: 2 },
   divider: { height: 1, backgroundColor: '#E2E8F0', marginBottom: 12 },
-  
-  // Staff Metrics
+
   staffMetricsRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 },
   staffMetric: { flex: 1 },
   staffMetricLabel: { fontSize: 10, fontWeight: '700', color: '#718096', letterSpacing: 0.5, marginBottom: 4 },
   staffMetricValue: { fontSize: 16, fontWeight: '700', color: '#1A202C' },
 
-  // Staff Footer
   staffFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 },
   statusBadge: { borderRadius: 12, paddingHorizontal: 10, paddingVertical: 4 },
   statusExceeding: { backgroundColor: '#DCFCE7' },
@@ -429,15 +562,12 @@ const styles = StyleSheet.create({
   timeAgoContainer: { flexDirection: 'row', alignItems: 'center' },
   timeAgoText: { fontSize: 11, color: '#718096' },
 
-  // View All
   viewAllButton: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', paddingVertical: 16, marginBottom: 10 },
   viewAllText: { fontSize: 13, fontWeight: '700', color: '#1E3A8A', letterSpacing: 0.5 },
 
-  // Footer Note
   footerNote: { flexDirection: 'row', paddingHorizontal: 20, paddingBottom: 20, alignItems: 'flex-start' },
   footerNoteText: { flex: 1, fontSize: 11, color: '#718096', lineHeight: 16 },
 
-  // Bottom Navigation
   bottomNav: { position: 'absolute', bottom: 0, left: 0, right: 0, flexDirection: 'row', backgroundColor: '#FFFFFF', borderTopWidth: 1, borderTopColor: '#E5E7EB', paddingVertical: 10, paddingBottom: Platform.OS === 'ios' ? 25 : 10, justifyContent: 'space-around', alignItems: 'center' },
   navItem: { alignItems: 'center', justifyContent: 'center' },
   navIconContainer: { position: 'relative' },
@@ -445,4 +575,82 @@ const styles = StyleSheet.create({
   navBadgeText: { color: '#FFFFFF', fontSize: 10, fontWeight: 'bold' },
   navText: { fontSize: 12, color: '#6B7280', marginTop: 4, fontWeight: '500' },
   navTextActive: { color: '#2563EB', fontWeight: '700' },
+
+  // --- Staff Picker Modal Styles ---
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  pickerModalContent: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 20,
+    width: '100%',
+    maxWidth: 400,
+    maxHeight: '75%',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 20,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#1A202C',
+  },
+  modalSubtitle: {
+    fontSize: 12,
+    color: '#718096',
+    marginTop: 4,
+    maxWidth: '85%',
+  },
+  staffPickerItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F7FAFC',
+    borderRadius: 10,
+    padding: 14,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  pickerAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#8B5CF6',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  pickerAvatarText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  pickerInfo: {
+    flex: 1,
+  },
+  pickerName: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#1A202C',
+    marginBottom: 2,
+  },
+  pickerRole: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#718096',
+    letterSpacing: 0.5,
+  },
 });
