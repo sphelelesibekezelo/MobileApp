@@ -12,6 +12,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 
+import logoImg from "@/assets/images/logo.png" // Ensure you have a logo image in the assets folder
+
 // Dummy data for the review list
 const requests = [
   { id: 1, name: 'Mathebula Nicholas', initials: 'MN', reason: 'Academic Commitment', date: '25 AUG 2026', color: '#E9D8FD' },
@@ -37,21 +39,27 @@ export default function SupervisorDashboard() {
       
       {/* Top Header */}
       <View style={styles.header}>
-        <View style={styles.headerLeft}>
-          <View style={styles.logoContainer}>
-            <Ionicons name="calendar" size={20} color="#FFFFFF" />
-          </View>
-          <View>
-            <Text style={styles.headerTitle}>StudentAssist</Text>
+        
+        {/* Top Header Bar */}
+        <View style={styles.header}>
+          <Image
+            source={logoImg}
+            style={styles.iconContainer}
+            resizeMode="contain" 
+          />
+          <View style={styles.headerTextContainer}>
+            <Text style={styles.headerTitle}>StudentAssistance</Text>
             <Text style={styles.headerSubtitle}>ABSENCE TRACKER</Text>
           </View>
         </View>
+
         <View style={styles.headerRight}>
          
           <TouchableOpacity style={styles.iconButton}>
             <Ionicons name="notifications-outline" size={22} color="#1E3A8A" />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.iconButton} onPress={() => router.replace('/logIn')}>
+          {/* UPDATED: Navigates to logOut.jsx */}
+          <TouchableOpacity style={styles.iconButton} onPress={() => router.push('/logOut')}>
             <Ionicons name="log-out-outline" size={22} color="#1E3A8A" />
           </TouchableOpacity>
         </View>
