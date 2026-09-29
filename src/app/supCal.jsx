@@ -9,12 +9,15 @@ import {
   Modal, 
   TextInput, 
   KeyboardAvoidingView, 
-  Platform 
+  Platform,
+  Image, // Added Image import
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { Picker } from '@react-native-picker/picker'; 
+
+import logoImg from "@/assets/images/logo.png"; // Same logo path as other pages
 
 // Combined list of assistants
 const assistants = [
@@ -209,7 +212,6 @@ export default function SupervisorDashboard() {
     return day === today.getDate() && month === today.getMonth() && year === today.getFullYear();
   };
 
-  // Format Date Key Helper
   const getDateKey = (day, m = month, y = year) => {
     const dayStr = String(day).padStart(2, '0');
     const monthStr = String(m + 1).padStart(2, '0');
@@ -234,7 +236,6 @@ export default function SupervisorDashboard() {
   const handleEventDateSelect = (date) => setEventDate(date);
   const handleShiftDateSelect = (date) => setShiftDate(date);
 
-  // SAVE NEW EVENT
   const handleAddEvent = () => {
     if (!eventDate || !eventTime) {
       alert("Please fill in the date and time of the event.");
@@ -264,7 +265,6 @@ export default function SupervisorDashboard() {
     setIsEventModalVisible(false);
   };
 
-  // SAVE NEW SHIFT
   const handleAssignShift = () => {
     if (!shiftDate || !shiftTime || !shiftDuration) {
       alert("Please fill in all fields including the date.");
@@ -309,7 +309,6 @@ export default function SupervisorDashboard() {
     }, 0);
   };
 
-  // NEW: Check if the selected day has an event that prevents shift assignment
   const hasClosingEvent = selectedDay && selectedDay.events && selectedDay.events.some(
     event => event.type === 'Strike' || event.type === 'Library Closure'
   );
@@ -317,23 +316,26 @@ export default function SupervisorDashboard() {
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
       
-      {/* Top Header */}
+      {/* --- UPDATED Header (matches design in the image) --- */}
       <View style={styles.header}>
         <View style={styles.headerLeft}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-            <Ionicons name="chevron-back-outline" size={24} color="#FFFFFF" />
-          </TouchableOpacity>
-          <View>
-            <Text style={styles.headerTitle}>Supervisor Dashboard</Text>
+          <Image
+            source={logoImg}
+            style={styles.iconContainer}
+            resizeMode="contain" 
+          />
+          <View style={styles.headerTextContainer}>
+            <Text style={styles.headerTitle}>StudentAssistance</Text>
             <Text style={styles.headerSubtitle}>ABSENCE TRACKER</Text>
           </View>
         </View>
+
         <View style={styles.headerRight}>
           <TouchableOpacity style={styles.iconButton}>
-            <Ionicons name="notifications-outline" size={22} color="#FFFFFF" />
+            <Ionicons name="notifications-outline" size={22} color="#1E3A8A" />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.iconButton} onPress={() => router.push('/signOut')}>
-            <Ionicons name="log-out-outline" size={22} color="#FFFFFF" />
+          <TouchableOpacity style={styles.iconButton} onPress={() => router.push('/logOut')}>
+            <Ionicons name="log-out-outline" size={22} color="#1E3A8A" />
           </TouchableOpacity>
         </View>
       </View>
@@ -395,7 +397,6 @@ export default function SupervisorDashboard() {
                     </View>
                   )}
                   
-                  {/* INDICATOR DOTS */}
                   {day !== '' && (hasShift || hasEvent) && (
                     <View style={styles.dotContainer}>
                       {hasShift && <View style={[styles.dot, { backgroundColor: '#2563EB' }]} />}
@@ -558,7 +559,6 @@ export default function SupervisorDashboard() {
 
             <ScrollView style={styles.shiftsList} showsVerticalScrollIndicator={false}>
               
-              {/* EVENTS SECTION */}
               {selectedDay && selectedDay.events.length > 0 && (
                 <View style={styles.sectionContainer}>
                   <Text style={styles.sectionHeaderTitle}>EVENTS</Text>
@@ -582,7 +582,6 @@ export default function SupervisorDashboard() {
                 </View>
               )}
 
-              {/* SHIFTS SECTION */}
               {selectedDay && selectedDay.shifts.length > 0 ? (
                 selectedDay.shifts.map((shift) => (
                   <View key={shift.id} style={styles.shiftCard}>
@@ -627,7 +626,6 @@ export default function SupervisorDashboard() {
                 <Text style={styles.closeModalButtonText}>Close</Text>
               </TouchableOpacity>
               
-              {/* UPDATED: Assign Shift Button with Disabled State */}
               <TouchableOpacity 
                 style={[styles.assignModalButton, hasClosingEvent && styles.disabledButton]} 
                 onPress={() => {
@@ -838,13 +836,50 @@ export default function SupervisorDashboard() {
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: '#8FB3D9' },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 12, backgroundColor: '#1E3A8A' },
-  headerLeft: { flexDirection: 'row', alignItems: 'center' },
-  backButton: { marginRight: 10 },
-  headerTitle: { fontSize: 16, fontWeight: '700', color: '#FFFFFF' },
-  headerSubtitle: { fontSize: 9, fontWeight: '600', color: '#A0C1DD', letterSpacing: 1 },
-  headerRight: { flexDirection: 'row', alignItems: 'center' },
-  iconButton: { marginLeft: 16 },
+  
+  // --- UPDATED Header Styles (white background, logo, dark text) ---
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E2E8F0',
+  },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  iconContainer: {
+    width: 40,
+    height: 40,
+    marginRight: 10,
+  },
+  headerTextContainer: {
+    justifyContent: 'center',
+  },
+  headerTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#1A202C',
+  },
+  headerSubtitle: {
+    fontSize: 9,
+    fontWeight: '600',
+    color: '#718096',
+    letterSpacing: 1,
+    marginTop: 2,
+  },
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  iconButton: {
+    marginLeft: 16,
+  },
+  
   scrollContent: { padding: 20, paddingBottom: 100 },
   portalHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 6 },
   portalIcon: { marginRight: 6 },
@@ -868,7 +903,6 @@ const styles = StyleSheet.create({
   activeDateText: { color: '#FFFFFF' },
   todayLabel: { fontSize: 8, fontWeight: '800', color: '#1E3A8A', position: 'absolute', bottom: -6 },
   
-  // Indicator Dot Styles
   dotContainer: { flexDirection: 'row', marginTop: 2, height: 6, alignItems: 'center' },
   dot: { width: 5, height: 5, borderRadius: 2.5, marginHorizontal: 1 },
 
@@ -1147,7 +1181,6 @@ const styles = StyleSheet.create({
     color: '#4A5568',
   },
   
-  // Event Card Styles
   sectionContainer: { marginBottom: 16 },
   sectionHeaderTitle: { fontSize: 12, fontWeight: '800', color: '#1E3A8A', letterSpacing: 0.5, marginBottom: 8 },
   eventCard: { backgroundColor: '#FEF2F2', borderRadius: 10, padding: 14, marginBottom: 10, borderWidth: 1, borderColor: '#FECACA' },
@@ -1194,13 +1227,11 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
   
-  // NEW: Disabled Button Style
   disabledButton: {
     backgroundColor: '#A0AEC0',
     opacity: 0.7,
   },
 
-  // --- Custom Date Picker Styles ---
   datePickerOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
