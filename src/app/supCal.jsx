@@ -331,8 +331,11 @@ export default function SupervisorDashboard() {
         </View>
 
         <View style={styles.headerRight}>
-          <TouchableOpacity style={styles.iconButton}>
-            <Ionicons name="notifications-outline" size={22} color="#1E3A8A" />
+          <TouchableOpacity
+              style={styles.iconButton}
+              onPress={() => router.push('/supNotification')}
+            >
+              <Ionicons name="notifications-outline" size={22} color="#1E3A8A" />
           </TouchableOpacity>
           <TouchableOpacity style={styles.iconButton} onPress={() => router.push('/logOut')}>
             <Ionicons name="log-out-outline" size={22} color="#1E3A8A" />

@@ -305,7 +305,10 @@ export default function SupervisorReports() {
           </View>
         </View>
         <View style={styles.headerRight}>
-          <TouchableOpacity style={styles.iconButton}>
+          <TouchableOpacity
+              style={styles.iconButton}
+              onPress={() => router.push('/supNotification')}
+          >
             <Ionicons name="notifications-outline" size={22} color="#1E3A8A" />
           </TouchableOpacity>
           <TouchableOpacity style={styles.iconButton} onPress={() => router.push('/logOut')}>

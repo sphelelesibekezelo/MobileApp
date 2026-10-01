@@ -128,7 +128,7 @@ export default function SupervisorDashboard() {
         <View style={styles.headerRight}>
           <TouchableOpacity
             style={styles.iconButton}
-            onPress={() => router.push('/supNotif')}
+            onPress={() => router.push('/supNotification')}
           >
             <Ionicons name="notifications-outline" size={22} color="#1E3A8A" />
           </TouchableOpacity>
