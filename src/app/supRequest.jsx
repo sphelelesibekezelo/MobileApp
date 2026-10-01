@@ -1,18 +1,18 @@
 // src/app/supRequest.jsx
-import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  TextInput,
-  Platform,
-  Image, // Added Image import
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { useState } from 'react';
+import {
+  Image,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import logoImg from "@/assets/images/logo.png"; // Same logo path as supervisorDash.jsx
 
@@ -211,7 +211,13 @@ export default function SupervisorRequests() {
         ))}
 
         {/* View All History Link */}
-        <TouchableOpacity style={styles.viewAllButton}>
+        <TouchableOpacity
+          style={styles.viewAllButton}
+          onPress={() => router.push({
+            pathname: '/supReqHistory',
+            params: { submissions: JSON.stringify(submissions) },
+          })}
+        >
           <Text style={styles.viewAllText}>VIEW ALL HISTORY</Text>
           <Ionicons name="chevron-forward" size={16} color="#1E3A8A" style={{ marginLeft: 4 }} />
         </TouchableOpacity>
