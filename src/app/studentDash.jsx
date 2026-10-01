@@ -74,7 +74,7 @@ export default function HomeScreen() {
 
           <TouchableOpacity
             style={styles.headerIcon}
-            onPress={() => router.replace('/')}
+            onPress={() => router.replace('/logOut')}
           >
             <Ionicons
               name="log-out-outline"

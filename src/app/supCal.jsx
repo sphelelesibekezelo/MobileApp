@@ -1,23 +1,23 @@
 // src/app/supervisorDash.jsx
-import { Ionicons } from '@expo/vector-icons';
-import { Picker } from '@react-native-picker/picker';
-import { useRouter } from 'expo-router';
-import { useState } from 'react';
+import React, { useState } from 'react';
 import {
-    Image,
-    KeyboardAvoidingView,
-    Modal,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  Modal,
+  TextInput,
+  KeyboardAvoidingView,
+  Platform,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
+import { Picker } from '@react-native-picker/picker';
 
-import logoImg from "@/assets/images/logo.png"; // Same logo path as other pages
+import logoImg from "@/assets/images/logo.png";
 
 // Combined list of assistants
 const assistants = [
@@ -42,6 +42,77 @@ const initialShiftRecords = {
   ],
 };
 
+// =====================================================
+// ✅ DYNAMIC SOUTH AFRICAN HOLIDAYS FOR ANY YEAR
+// =====================================================
+
+// Calculate Easter Sunday for a given year (Anonymous Gregorian algorithm)
+const getEasterSunday = (year) => {
+  const a = year % 19;
+  const b = Math.floor(year / 100);
+  const c = year % 100;
+  const d = Math.floor(b / 4);
+  const e = b % 4;
+  const f = Math.floor((b + 8) / 25);
+  const g = Math.floor((b - f + 1) / 3);
+  const h = Math.floor((19 * a + b - d - g + 15) % 30);
+  const i = Math.floor(c / 4);
+  const k = c % 4;
+  const l = Math.floor((32 + 2 * e + 2 * i - h - k) % 7);
+  const m = Math.floor((a + 11 * h + 22 * l) / 451);
+  const month = Math.floor((h + l - 7 * m + 114) / 31);
+  const day = ((h + l - 7 * m + 114) % 31) + 1;
+  return new Date(year, month - 1, day);
+};
+
+// Build the full list of South African public holidays for a given year
+const getHolidaysForYear = (year) => {
+  const pad = (n) => String(n).padStart(2, '0');
+  const key = (m, d) => `${year}-${pad(m)}-${pad(d)}`;
+
+  const holidays = {};
+
+  // Fixed-date holidays
+  const fixedDates = [
+    [1, 1, "New Year's Day"],
+    [3, 21, 'Human Rights Day'],
+    [4, 27, 'Freedom Day'],
+    [5, 1, "Workers' Day"],
+    [6, 16, 'Youth Day'],
+    [8, 9, "National Women's Day"],
+    [9, 24, 'Heritage Day'],
+    [12, 16, 'Day of Reconciliation'],
+    [12, 25, 'Christmas Day'],
+    [12, 26, 'Day of Goodwill'],
+  ];
+
+  // Add fixed-date holidays
+  fixedDates.forEach(([m, d, name]) => {
+    holidays[key(m, d)] = name;
+  });
+
+  // Easter-based holidays (Good Friday, Family Day)
+  const easter = getEasterSunday(year);
+  const goodFriday = new Date(easter);
+  goodFriday.setDate(easter.getDate() - 2);
+  const familyDay = new Date(easter);
+  familyDay.setDate(easter.getDate() + 1);
+
+  holidays[key(goodFriday.getMonth() + 1, goodFriday.getDate())] = 'Good Friday';
+  holidays[key(familyDay.getMonth() + 1, familyDay.getDate())] = 'Family Day';
+
+  // Observed Monday rule: if a fixed holiday falls on Sunday, the following Monday is a holiday
+  fixedDates.forEach(([m, d, name]) => {
+    const date = new Date(year, m - 1, d);
+    if (date.getDay() === 0) {
+      const monday = new Date(year, m - 1, d + 1);
+      holidays[key(monday.getMonth() + 1, monday.getDate())] = `${name} (Observed)`;
+    }
+  });
+
+  return holidays;
+};
+
 const formatDate = (date) => {
   if (!date) return '';
   const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -52,70 +123,12 @@ const formatDate = (date) => {
 };
 
 const MONTH_NAMES = [
-  "January", "February", "March", "April", "May", "June", 
+  "January", "February", "March", "April", "May", "June",
   "July", "August", "September", "October", "November", "December"
 ];
 
-const getDateKeyForDate = (date) => {
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${date.getFullYear()}-${month}-${day}`;
-};
-
-const getEasterSunday = (year) => {
-  const a = year % 19;
-  const b = Math.floor(year / 100);
-  const c = year % 100;
-  const d = Math.floor(b / 4);
-  const e = b % 4;
-  const f = Math.floor((b + 8) / 25);
-  const g = Math.floor((b - f + 1) / 3);
-  const h = (19 * a + b - d - g + 15) % 30;
-  const i = Math.floor(c / 4);
-  const k = c % 4;
-  const l = (32 + 2 * e + 2 * i - h - k) % 7;
-  const m = Math.floor((a + 11 * h + 22 * l) / 451);
-  const month = Math.floor((h + l - 7 * m + 114) / 31);
-  const day = ((h + l - 7 * m + 114) % 31) + 1;
-  return new Date(year, month - 1, day);
-};
-
-const getSouthAfricanHolidays = (year) => {
-  const easterSunday = getEasterSunday(year);
-  const addDays = (date, days) => new Date(year, date.getMonth(), date.getDate() + days);
-  const holidays = [
-    { date: new Date(year, 0, 1), name: "New Year's Day", label: 'New Year' },
-    { date: new Date(year, 2, 21), name: 'Human Rights Day', label: 'Human Rts' },
-    { date: addDays(easterSunday, -2), name: 'Good Friday', label: 'Good Friday' },
-    { date: addDays(easterSunday, 1), name: 'Family Day', label: 'Family Day' },
-    { date: new Date(year, 3, 27), name: 'Freedom Day', label: 'Freedom' },
-    { date: new Date(year, 4, 1), name: "Workers' Day", label: 'Workers' },
-    { date: new Date(year, 5, 16), name: 'Youth Day', label: 'Youth Day' },
-    { date: new Date(year, 7, 9), name: "National Women's Day", label: "Women's Day" },
-    { date: new Date(year, 8, 24), name: 'Heritage Day', label: 'Heritage' },
-    { date: new Date(year, 11, 16), name: 'Day of Reconciliation', label: 'Reconcil.' },
-    { date: new Date(year, 11, 25), name: 'Christmas Day', label: 'Christmas' },
-    { date: new Date(year, 11, 26), name: 'Day of Goodwill', label: 'Goodwill' },
-  ];
-  const holidayMap = {};
-
-  holidays.forEach((holiday) => {
-    holidayMap[getDateKeyForDate(holiday.date)] = holiday;
-    if (holiday.date.getDay() === 0) {
-      const observedDate = addDays(holiday.date, 1);
-      holidayMap[getDateKeyForDate(observedDate)] = {
-        ...holiday,
-        date: observedDate,
-        observed: true,
-      };
-    }
-  });
-
-  return holidayMap;
-};
-
-const getHolidayForDate = (date) => getSouthAfricanHolidays(date.getFullYear())[getDateKeyForDate(date)];
-const isNonWorkingDate = (date) => date.getDay() === 0 || Boolean(getHolidayForDate(date));
+// The current date — drives the Details Card
+const TODAY = new Date(2026, 7, 9); // August 9, 2026
 
 // =====================================================
 // CUSTOM DATE PICKER COMPONENT
@@ -133,12 +146,8 @@ const CustomDatePicker = ({ visible, onClose, onSelect, initialDate }) => {
   const firstDay = getFirstDayOfMonth(year, month);
 
   const calendarDays = [];
-  for (let i = 0; i < firstDay; i++) {
-    calendarDays.push('');
-  }
-  for (let i = 1; i <= daysInMonth; i++) {
-    calendarDays.push(i);
-  }
+  for (let i = 0; i < firstDay; i++) calendarDays.push('');
+  for (let i = 1; i <= daysInMonth; i++) calendarDays.push(i);
 
   const handlePrevMonth = () => setViewDate(new Date(year, month - 1, 1));
   const handleNextMonth = () => setViewDate(new Date(year, month + 1, 1));
@@ -146,7 +155,6 @@ const CustomDatePicker = ({ visible, onClose, onSelect, initialDate }) => {
   const handleSelectDay = (day) => {
     if (day === '') return;
     const selected = new Date(year, month, day);
-    if (isNonWorkingDate(selected)) return;
     onSelect(selected);
     onClose();
   };
@@ -188,39 +196,15 @@ const CustomDatePicker = ({ visible, onClose, onSelect, initialDate }) => {
           </View>
 
           <View style={styles.datePickerGrid}>
-            {calendarDays.map((day, index) => {
-              const date = day === '' ? null : new Date(year, month, day);
-              const holiday = date ? getHolidayForDate(date) : null;
-              const isUnavailable = date ? isNonWorkingDate(date) : false;
-              return (
-                <TouchableOpacity
-                  key={index}
-                  style={styles.datePickerCell}
-                  onPress={() => handleSelectDay(day)}
-                  disabled={day === '' || isUnavailable}
-                >
-                  {day !== '' && (
-                    <>
-                      <View style={[
-                        styles.datePickerDateCircle,
-                        isSelected(day) && !isUnavailable && styles.datePickerSelectedCircle,
-                      ]}>
-                        <Text style={[
-                          styles.datePickerDateText,
-                          isSelected(day) && !isUnavailable && styles.datePickerSelectedText,
-                          isUnavailable && styles.nonWorkingDateText,
-                        ]}>{day}</Text>
-                      </View>
-                      {isUnavailable && (
-                        <Text style={styles.datePickerHolidayText} numberOfLines={1}>
-                          {holiday?.label || 'Sunday'}
-                        </Text>
-                      )}
-                    </>
-                  )}
-                </TouchableOpacity>
-              );
-            })}
+            {calendarDays.map((day, index) => (
+              <TouchableOpacity key={index} style={styles.datePickerCell} onPress={() => handleSelectDay(day)} disabled={day === ''}>
+                {day !== '' && (
+                  <View style={[styles.datePickerDateCircle, isSelected(day) && styles.datePickerSelectedCircle]}>
+                    <Text style={[styles.datePickerDateText, isSelected(day) && styles.datePickerSelectedText]}>{day}</Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+            ))}
           </View>
 
           <TouchableOpacity style={styles.datePickerCancelBtn} onPress={onClose}>
@@ -249,12 +233,11 @@ const AssistantCard = ({ item }) => (
 
 export default function SupervisorDashboard() {
   const router = useRouter();
-  
-  const [currentDate, setCurrentDate] = useState(new Date(2026, 7, 5)); 
-  
-  // STATE: Shift Records and Events
+
+  const [currentDate, setCurrentDate] = useState(new Date(2026, 7, 9));
+
   const [shiftRecords, setShiftRecords] = useState(initialShiftRecords);
-  const [events, setEvents] = useState({}); 
+  const [events, setEvents] = useState({});
 
   // Add Event Modal
   const [isEventModalVisible, setIsEventModalVisible] = useState(false);
@@ -280,6 +263,9 @@ export default function SupervisorDashboard() {
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
 
+  // ✅ Compute holidays for the currently displayed year
+  const holidaysForYear = getHolidaysForYear(year);
+
   const getDaysInMonth = (y, m) => new Date(y, m + 1, 0).getDate();
   const getFirstDayOfMonth = (y, m) => new Date(y, m, 1).getDay();
 
@@ -294,8 +280,7 @@ export default function SupervisorDashboard() {
   const handleNextMonth = () => setCurrentDate(new Date(year, month + 1, 1));
 
   const isToday = (day) => {
-    const today = new Date(2026, 7, 5); 
-    return day === today.getDate() && month === today.getMonth() && year === today.getFullYear();
+    return day === TODAY.getDate() && month === TODAY.getMonth() && year === TODAY.getFullYear();
   };
 
   const getDateKey = (day, m = month, y = year) => {
@@ -304,11 +289,11 @@ export default function SupervisorDashboard() {
     return `${y}-${monthStr}-${dayStr}`;
   };
 
-  const handleDayPress = (day) => {
-    if (day === '') return;
-    if (isNonWorkingDate(new Date(year, month, day))) return;
+  // Blocks both Sundays and holidays
+  const handleDayPress = (day, isSunday, isHoliday) => {
+    if (day === '' || isSunday || isHoliday) return;
     const dateKey = getDateKey(day);
-    
+
     setSelectedDay({
       day: day,
       month: monthNames[month],
@@ -320,27 +305,19 @@ export default function SupervisorDashboard() {
     setIsDayModalVisible(true);
   };
 
-  const handleEventDateSelect = (date) => {
-    if (!isNonWorkingDate(date)) setEventDate(date);
-  };
-  const handleShiftDateSelect = (date) => {
-    if (!isNonWorkingDate(date)) setShiftDate(date);
-  };
+  const handleEventDateSelect = (date) => setEventDate(date);
+  const handleShiftDateSelect = (date) => setShiftDate(date);
 
   const handleAddEvent = () => {
     if (!eventDate || !eventTime) {
       alert("Please fill in the date and time of the event.");
       return;
     }
-    if (isNonWorkingDate(eventDate)) {
-      alert('Events cannot be added on Sundays or public holidays.');
-      return;
-    }
-    
+
     const m = eventDate.getMonth();
     const y = eventDate.getFullYear();
     const dateKey = getDateKey(eventDate.getDate(), m, y);
-    
+
     const newEvent = {
       id: Date.now(),
       type: eventType,
@@ -353,7 +330,7 @@ export default function SupervisorDashboard() {
     }));
 
     alert(`Event Added!\nDate: ${formatDate(eventDate)}\nType: ${eventType}\nTime: ${eventTime}`);
-    
+
     setEventDate(null);
     setEventType('Strike');
     setEventTime('');
@@ -365,17 +342,13 @@ export default function SupervisorDashboard() {
       alert("Please fill in all fields including the date.");
       return;
     }
-    if (isNonWorkingDate(shiftDate)) {
-      alert('Shifts cannot be assigned on Sundays or public holidays.');
-      return;
-    }
 
     const m = shiftDate.getMonth();
     const y = shiftDate.getFullYear();
     const dateKey = getDateKey(shiftDate.getDate(), m, y);
 
     const selectedAsst = assistants.find(a => a.name === selectedAssistant) || assistants[0];
-    
+
     const newShift = {
       id: Date.now(),
       assistant: selectedAssistant,
@@ -392,7 +365,7 @@ export default function SupervisorDashboard() {
     }));
 
     alert(`Shift Assigned!\nAssistant: ${selectedAssistant}\nPosition: ${selectedPosition}\nDate: ${formatDate(shiftDate)}\nTime: ${shiftTime}\nDuration: ${shiftDuration} hours`);
-    
+
     setSelectedPosition('Icenter');
     setShiftDate(null);
     setShiftTime('');
@@ -412,29 +385,42 @@ export default function SupervisorDashboard() {
     event => event.type === 'Strike' || event.type === 'Library Closure'
   );
 
+  // =====================================================
+  // TODAY's summary (for the Details Card)
+  // =====================================================
+  const todayDateKey = getDateKey(TODAY.getDate(), TODAY.getMonth(), TODAY.getFullYear());
+
+  const todayShifts = shiftRecords[todayDateKey] || [];
+  const todayEvents = events[todayDateKey] || [];
+  const todayTotalHours = todayShifts.reduce((sum, s) => {
+    return sum + parseFloat(s.hours.replace('h', ''));
+  }, 0);
+
+  // ✅ Holiday check for today (dynamic, using TODAY's year)
+  const todayHolidaysMap = getHolidaysForYear(TODAY.getFullYear());
+  const todayHoliday = todayHolidaysMap[todayDateKey] || null;
+
+  const todayDateLabel = `${monthNames[TODAY.getMonth()]} ${TODAY.getDate()} Details`;
+  const todaySubtitle =
+    todayShifts.length > 0
+      ? `${todayShifts.length} shift${todayShifts.length > 1 ? 's' : ''} · ${todayTotalHours}h total`
+      : 'No shifts scheduled for today';
+
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
-      
-      {/* --- UPDATED Header (matches design in the image) --- */}
+
+      {/* Top Header */}
       <View style={styles.header}>
         <View style={styles.headerLeft}>
-          <Image
-            source={logoImg}
-            style={styles.iconContainer}
-            resizeMode="contain" 
-          />
+          <Image source={logoImg} style={styles.iconContainer} resizeMode="contain" />
           <View style={styles.headerTextContainer}>
             <Text style={styles.headerTitle}>StudentAssistance</Text>
             <Text style={styles.headerSubtitle}>ABSENCE TRACKER</Text>
           </View>
         </View>
-
         <View style={styles.headerRight}>
-          <TouchableOpacity
-              style={styles.iconButton}
-              onPress={() => router.push('/supNotification')}
-            >
-              <Ionicons name="notifications-outline" size={22} color="#1E3A8A" />
+          <TouchableOpacity style={styles.iconButton} onPress={() => router.push('/supNotif')}>
+            <Ionicons name="notifications-outline" size={22} color="#1E3A8A" />
           </TouchableOpacity>
           <TouchableOpacity style={styles.iconButton} onPress={() => router.push('/logOut')}>
             <Ionicons name="log-out-outline" size={22} color="#1E3A8A" />
@@ -443,7 +429,7 @@ export default function SupervisorDashboard() {
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        
+
         <View style={styles.portalHeader}>
           <Ionicons name="desktop-outline" size={16} color="#1E3A8A" style={styles.portalIcon} />
           <Text style={styles.portalTitle}>SUPERVISOR PORTAL</Text>
@@ -460,12 +446,20 @@ export default function SupervisorDashboard() {
               <Text style={styles.calendarMonth}>{monthNames[month]} {year}</Text>
               <Text style={styles.calendarSubtext}>12 ACTIVE SHIFTS</Text>
             </View>
+
             <View style={styles.calendarNav}>
               <TouchableOpacity style={styles.navArrow} onPress={handlePrevMonth}>
                 <Ionicons name="chevron-back" size={16} color="#1E3A8A" />
               </TouchableOpacity>
               <TouchableOpacity style={styles.navArrow} onPress={handleNextMonth}>
                 <Ionicons name="chevron-forward" size={16} color="#1E3A8A" />
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.addEventButtonSmall}
+                onPress={() => setIsEventModalVisible(true)}
+              >
+                <Ionicons name="add-outline" size={16} color="#FFFFFF" />
               </TouchableOpacity>
             </View>
           </View>
@@ -478,54 +472,63 @@ export default function SupervisorDashboard() {
 
           <View style={styles.calendarGrid}>
             {calendarDays.map((day, index) => {
-              const cellDate = day === '' ? null : new Date(year, month, day);
               const dateKey = day !== '' ? getDateKey(day) : null;
-              const holiday = cellDate ? getHolidayForDate(cellDate) : null;
-              const isUnavailable = cellDate ? isNonWorkingDate(cellDate) : false;
-              const hasShift = dateKey && shiftRecords[dateKey] && shiftRecords[dateKey].length > 0;
+              const isSunday = index % 7 === 0;
+              // ✅ Using dynamic holidays for the currently displayed year
+              const isHoliday = dateKey && !!holidaysForYear[dateKey];
+              const hasShift = !isSunday && !isHoliday && dateKey && shiftRecords[dateKey] && shiftRecords[dateKey].length > 0;
               const dayEvents = dateKey && events[dateKey] ? events[dateKey] : [];
-              const hasEvent = dayEvents.length > 0;
+              const hasEvent = !isSunday && !isHoliday && dayEvents.length > 0;
+              const isDisabled = day === '' || isSunday || isHoliday;
 
               return (
-                <TouchableOpacity 
-                  key={index} 
-                  style={[styles.calendarCell, isUnavailable && styles.nonWorkingCalendarCell]}
-                  onPress={() => handleDayPress(day)}
-                  disabled={day === '' || isUnavailable}
+                <TouchableOpacity
+                  key={index}
+                  style={styles.calendarCell}
+                  onPress={() => handleDayPress(day, isSunday, isHoliday)}
+                  disabled={isDisabled}
                   activeOpacity={0.7}
                 >
                   {day !== '' && (
-                    <View style={[
-                      styles.dateCircle,
-                      isUnavailable && styles.nonWorkingDateCircle,
-                      isToday(day) && !isUnavailable && styles.activeDate,
-                    ]}>
-                      <Text style={[
-                        styles.dateText,
-                        isUnavailable && styles.nonWorkingDateText,
-                        isToday(day) && !isUnavailable && styles.activeDateText,
-                      ]}>
+                    <View
+                      style={[
+                        styles.dateCircle,
+                        isHoliday && styles.holidayDate,
+                        isToday(day) && styles.activeDate,
+                        isSunday && !isToday(day) && !isHoliday && styles.sundayDate,
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.dateText,
+                          isHoliday && styles.holidayDateText,
+                          isToday(day) && styles.activeDateText,
+                          isSunday && !isToday(day) && !isHoliday && styles.sundayDateText,
+                        ]}
+                      >
                         {day}
                       </Text>
                     </View>
                   )}
 
-                  {isUnavailable && (
-                    <Text style={styles.calendarHolidayText} numberOfLines={1}>
-                      {holiday?.label || 'Sunday'}
-                    </Text>
-                  )}
-                  
-                  {day !== '' && (hasShift || hasEvent) && (
+                  {day !== '' && (hasShift || hasEvent || isHoliday) && (
                     <View style={styles.dotContainer}>
                       {hasShift && <View style={[styles.dot, { backgroundColor: '#2563EB' }]} />}
                       {dayEvents.map(e => (
-                        <View key={e.id} style={[styles.dot, { backgroundColor: e.type === 'Strike' ? '#1A202C' : '#DC2626' }]} />
+                        <View
+                          key={e.id}
+                          style={[
+                            styles.dot,
+                            { backgroundColor: e.type === 'Strike' ? '#1A202C' : '#DC2626' },
+                          ]}
+                        />
                       ))}
+                      {isHoliday && <View style={[styles.dot, { backgroundColor: '#9333EA' }]} />}
                     </View>
                   )}
-                  
-                  {isToday(day) && <Text style={styles.todayLabel}>TODAY</Text>}
+
+                  {isToday(day) && !isHoliday && <Text style={styles.todayLabel}>TODAY</Text>}
+                  {isHoliday && <Text style={styles.holidayLabel}>HOLIDAY</Text>}
                 </TouchableOpacity>
               );
             })}
@@ -534,7 +537,7 @@ export default function SupervisorDashboard() {
           <View style={styles.legendRow}>
             <View style={styles.legendItem}>
               <View style={[styles.legendDot, { backgroundColor: '#DC2626' }]} />
-              <Text style={styles.legendText}>Library Closures</Text>
+              <Text style={styles.legendText}>Library</Text>
             </View>
             <View style={styles.legendItem}>
               <View style={[styles.legendDot, { backgroundColor: '#1A202C' }]} />
@@ -542,11 +545,11 @@ export default function SupervisorDashboard() {
             </View>
             <View style={styles.legendItem}>
               <View style={[styles.legendDot, { backgroundColor: '#2563EB' }]} />
-              <Text style={styles.legendText}>Daily Shift</Text>
+              <Text style={styles.legendText}>Shift</Text>
             </View>
             <View style={styles.legendItem}>
-              <View style={[styles.legendDot, { backgroundColor: '#A0AEC0' }]} />
-              <Text style={styles.legendText}>Holiday / Sunday</Text>
+              <View style={[styles.legendDot, { backgroundColor: '#9333EA' }]} />
+              <Text style={styles.legendText}>Holiday</Text>
             </View>
           </View>
         </View>
@@ -569,58 +572,92 @@ export default function SupervisorDashboard() {
           <View style={styles.scheduledIconContainer}>
             <Ionicons name="time-outline" size={20} color="#1E3A8A" />
           </View>
-          <Text style={styles.scheduledText}>TOTAL SCHEDULED</Text>
-          <Text style={styles.scheduledValue}>h</Text>
+          <Text style={styles.scheduledText}>TOTAL SCHEDULED TODAY</Text>
+          <Text style={styles.scheduledValue}>{todayTotalHours}h</Text>
         </View>
 
+        {/* DETAILS CARD — Today's summary + Holiday info */}
         <View style={styles.detailsCard}>
           <View style={styles.detailsHeader}>
             <View style={styles.detailsIconContainer}>
               <Ionicons name="calendar" size={20} color="#FFFFFF" />
             </View>
             <View style={styles.eventBadge}>
-              <Text style={styles.eventBadgeText}>Event</Text>
+              <Text style={styles.eventBadgeText}>
+                {todayHoliday
+                  ? 'Holiday'
+                  : todayEvents.length > 0
+                    ? `${todayEvents.length} Event${todayEvents.length > 1 ? 's' : ''}`
+                    : 'Today'}
+              </Text>
             </View>
           </View>
-          
-          <Text style={styles.detailsTitle}>August 5 Details</Text>
-          <Text style={styles.detailsSubtitle}>Jordan Workshop</Text>
-          
-          <Text style={styles.detailsDescription}>
-            Standard operation hours. Use the actions below to assign staff or record absence.
-          </Text>
 
-          <View style={styles.actionButtonsRow}>
-            <TouchableOpacity 
-              style={styles.assignButton} 
-              onPress={() => setIsAssignModalVisible(true)}
-            >
-              <Ionicons name="person-add-outline" size={18} color="#1E3A8A" style={{ marginRight: 6 }} />
-              <Text style={styles.assignButtonText}>Assign</Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity 
-              style={styles.addEventButton} 
-              onPress={() => setIsEventModalVisible(true)}
-            >
-              <Ionicons name="add-outline" size={18} color="#FFFFFF" style={{ marginRight: 6 }} />
-              <Text style={styles.addEventButtonText}>Add Event</Text>
-            </TouchableOpacity>
+          <Text style={styles.detailsTitle}>{todayDateLabel}</Text>
+
+          {todayHoliday && (
+            <View style={styles.holidayBanner}>
+              <Ionicons name="sparkles-outline" size={16} color="#FFFFFF" />
+              <View style={{ flex: 1 }}>
+                <Text style={styles.holidayBannerLabel}>PUBLIC HOLIDAY</Text>
+                <Text style={styles.holidayBannerName}>{todayHoliday}</Text>
+              </View>
+            </View>
+          )}
+
+          <Text style={styles.detailsSubtitle}>{todaySubtitle}</Text>
+
+          <View style={styles.summaryRow}>
+            <View style={styles.summaryItem}>
+              <Ionicons name="time-outline" size={16} color="#A0C1DD" />
+              <Text style={styles.summaryLabel}>Total Hours</Text>
+              <Text style={styles.summaryValue}>{todayTotalHours}h</Text>
+            </View>
+
+            <View style={styles.summaryItem}>
+              <Ionicons name="people-outline" size={16} color="#A0C1DD" />
+              <Text style={styles.summaryLabel}>Shifts</Text>
+              <Text style={styles.summaryValue}>{todayShifts.length}</Text>
+            </View>
+
+            <View style={styles.summaryItem}>
+              <Ionicons name="alert-circle-outline" size={16} color="#A0C1DD" />
+              <Text style={styles.summaryLabel}>Events</Text>
+              <Text style={styles.summaryValue}>{todayEvents.length}</Text>
+            </View>
           </View>
+
+          {todayShifts.length > 0 ? (
+            <View style={styles.detailsList}>
+              <Text style={styles.detailsListTitle}>ON DUTY TODAY</Text>
+              {todayShifts.map((shift) => (
+                <View key={shift.id} style={styles.detailsListItem}>
+                  <View style={[styles.detailsAvatar, { backgroundColor: shift.color }]}>
+                    <Text style={styles.detailsAvatarText}>{shift.initials}</Text>
+                  </View>
+                  <Text style={styles.detailsListName}>{shift.assistant}</Text>
+                  <Text style={styles.detailsListTime}>{shift.time}</Text>
+                </View>
+              ))}
+            </View>
+          ) : (
+            <Text style={styles.detailsEmpty}>
+              {todayHoliday
+                ? 'No shifts scheduled — campus closed for the holiday.'
+                : 'No shifts scheduled for today.'}
+            </Text>
+          )}
         </View>
 
       </ScrollView>
 
-      {/* --- BOTTOM NAVIGATION --- */}
+      {/* BOTTOM NAVIGATION */}
       <View style={styles.bottomNav}>
-        <TouchableOpacity 
-          style={styles.navItem} 
-          onPress={() => router.push('/supervisorDash')}
-        >
+        <TouchableOpacity style={styles.navItem} onPress={() => router.push('/supervisorDash')}>
           <Ionicons name="grid-outline" size={24} color="#6B7280" />
           <Text style={styles.navText}>Home</Text>
         </TouchableOpacity>
-        
+
         <TouchableOpacity style={styles.navItem} onPress={() => router.push('/supRequest')}>
           <View style={styles.navIconContainer}>
             <Ionicons name="document-text-outline" size={24} color="#6B7280" />
@@ -642,14 +679,14 @@ export default function SupervisorDashboard() {
         </TouchableOpacity>
       </View>
 
-      {/* --- DAY DETAILS MODAL --- */}
+      {/* DAY DETAILS MODAL */}
       <Modal
         animationType="slide"
         transparent={true}
         visible={isDayModalVisible}
         onRequestClose={() => setIsDayModalVisible(false)}
       >
-        <KeyboardAvoidingView 
+        <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           style={styles.modalOverlay}
         >
@@ -681,17 +718,17 @@ export default function SupervisorDashboard() {
             </View>
 
             <ScrollView style={styles.shiftsList} showsVerticalScrollIndicator={false}>
-              
+
               {selectedDay && selectedDay.events.length > 0 && (
                 <View style={styles.sectionContainer}>
                   <Text style={styles.sectionHeaderTitle}>EVENTS</Text>
                   {selectedDay.events.map((event) => (
                     <View key={event.id} style={styles.eventCard}>
                       <View style={styles.eventCardHeader}>
-                        <Ionicons 
-                          name={event.type === 'Strike' ? 'alert-circle' : 'library'} 
-                          size={18} 
-                          color={event.type === 'Strike' ? '#1A202C' : '#DC2626'} 
+                        <Ionicons
+                          name={event.type === 'Strike' ? 'alert-circle' : 'library'}
+                          size={18}
+                          color={event.type === 'Strike' ? '#1A202C' : '#DC2626'}
                           style={{ marginRight: 8 }}
                         />
                         <Text style={styles.eventTypeText}>{event.type}</Text>
@@ -742,15 +779,15 @@ export default function SupervisorDashboard() {
             </ScrollView>
 
             <View style={styles.modalActions}>
-              <TouchableOpacity 
-                style={styles.closeModalButton} 
+              <TouchableOpacity
+                style={styles.closeModalButton}
                 onPress={() => setIsDayModalVisible(false)}
               >
                 <Text style={styles.closeModalButtonText}>Close</Text>
               </TouchableOpacity>
-              
-              <TouchableOpacity 
-                style={[styles.assignModalButton, hasClosingEvent && styles.disabledButton]} 
+
+              <TouchableOpacity
+                style={[styles.assignModalButton, hasClosingEvent && styles.disabledButton]}
                 onPress={() => {
                   if (hasClosingEvent) return;
                   setIsDayModalVisible(false);
@@ -758,14 +795,14 @@ export default function SupervisorDashboard() {
                 }}
                 disabled={hasClosingEvent}
               >
-                <Ionicons 
-                  name="add-outline" 
-                  size={18} 
-                  color={hasClosingEvent ? '#E2E8F0' : '#FFFFFF'} 
-                  style={{ marginRight: 6 }} 
+                <Ionicons
+                  name="add-outline"
+                  size={18}
+                  color={hasClosingEvent ? '#E2E8F0' : '#FFFFFF'}
+                  style={{ marginRight: 6 }}
                 />
                 <Text style={[
-                  styles.assignModalButtonText, 
+                  styles.assignModalButtonText,
                   hasClosingEvent && { color: '#E2E8F0' }
                 ]}>
                   Assign Shift
@@ -776,14 +813,14 @@ export default function SupervisorDashboard() {
         </KeyboardAvoidingView>
       </Modal>
 
-      {/* --- ADD EVENT MODAL --- */}
+      {/* ADD EVENT MODAL */}
       <Modal
         animationType="slide"
         transparent={true}
         visible={isEventModalVisible}
         onRequestClose={() => setIsEventModalVisible(false)}
       >
-        <KeyboardAvoidingView 
+        <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           style={styles.modalOverlay}
         >
@@ -796,8 +833,8 @@ export default function SupervisorDashboard() {
             </View>
 
             <Text style={styles.inputLabel}>Date of Event</Text>
-            <TouchableOpacity 
-              style={styles.inputWrapper} 
+            <TouchableOpacity
+              style={styles.inputWrapper}
               onPress={() => setShowEventDatePicker(true)}
             >
               <Ionicons name="calendar-outline" size={18} color="#A0AEC0" style={styles.inputIcon} />
@@ -844,14 +881,14 @@ export default function SupervisorDashboard() {
         </KeyboardAvoidingView>
       </Modal>
 
-      {/* --- ASSIGN SHIFT MODAL --- */}
+      {/* ASSIGN SHIFT MODAL */}
       <Modal
         animationType="slide"
         transparent={true}
         visible={isAssignModalVisible}
         onRequestClose={() => setIsAssignModalVisible(false)}
       >
-        <KeyboardAvoidingView 
+        <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           style={styles.modalOverlay}
         >
@@ -891,8 +928,8 @@ export default function SupervisorDashboard() {
             </View>
 
             <Text style={styles.inputLabel}>Date of Shift</Text>
-            <TouchableOpacity 
-              style={styles.inputWrapper} 
+            <TouchableOpacity
+              style={styles.inputWrapper}
               onPress={() => setShowShiftDatePicker(true)}
             >
               <Ionicons name="calendar-outline" size={18} color="#A0AEC0" style={styles.inputIcon} />
@@ -939,7 +976,7 @@ export default function SupervisorDashboard() {
         </KeyboardAvoidingView>
       </Modal>
 
-      {/* --- CUSTOM DATE PICKERS --- */}
+      {/* CUSTOM DATE PICKERS */}
       <CustomDatePicker
         visible={showEventDatePicker}
         onClose={() => setShowEventDatePicker(false)}
@@ -959,8 +996,7 @@ export default function SupervisorDashboard() {
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: '#8FB3D9' },
-  
-  // --- UPDATED Header Styles (white background, logo, dark text) ---
+
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -971,72 +1007,78 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#E2E8F0',
   },
-  headerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  iconContainer: {
-    width: 40,
-    height: 40,
-    marginRight: 10,
-  },
-  headerTextContainer: {
-    justifyContent: 'center',
-  },
-  headerTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#1A202C',
-  },
-  headerSubtitle: {
-    fontSize: 9,
-    fontWeight: '600',
-    color: '#718096',
-    letterSpacing: 1,
-    marginTop: 2,
-  },
-  headerRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  iconButton: {
-    marginLeft: 16,
-  },
-  
+  headerLeft: { flexDirection: 'row', alignItems: 'center' },
+  iconContainer: { width: 40, height: 40, marginRight: 10 },
+  headerTextContainer: { justifyContent: 'center' },
+  headerTitle: { fontSize: 16, fontWeight: '700', color: '#1A202C' },
+  headerSubtitle: { fontSize: 9, fontWeight: '600', color: '#718096', letterSpacing: 1, marginTop: 2 },
+  headerRight: { flexDirection: 'row', alignItems: 'center' },
+  iconButton: { marginLeft: 16 },
+
   scrollContent: { padding: 20, paddingBottom: 100 },
   portalHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 6 },
   portalIcon: { marginRight: 6 },
   portalTitle: { fontSize: 11, fontWeight: '800', color: '#1E3A8A', letterSpacing: 0.5 },
   pageTitle: { fontSize: 26, fontWeight: '800', color: '#1A202C', marginBottom: 6 },
   pageSubtitle: { fontSize: 14, color: '#4A5568', marginBottom: 20 },
-  
+
   calendarCard: { backgroundColor: '#FFFFFF', borderRadius: 12, padding: 16, marginBottom: 24, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 2 },
   calendarHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
   calendarMonth: { fontSize: 18, fontWeight: '700', color: '#1A202C' },
   calendarSubtext: { fontSize: 11, fontWeight: '600', color: '#718096', marginTop: 2 },
-  calendarNav: { flexDirection: 'row' },
+  calendarNav: { flexDirection: 'row', alignItems: 'center' },
   navArrow: { padding: 8, backgroundColor: '#EDF2F7', borderRadius: 6, marginLeft: 8 },
+
+  addEventButtonSmall: {
+    width: 32,
+    height: 32,
+    borderRadius: 6,
+    backgroundColor: '#1E3A8A',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 8,
+  },
+
   daysRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10 },
   dayLabel: { width: '14%', textAlign: 'center', fontSize: 12, fontWeight: '600', color: '#718096' },
   calendarGrid: { flexDirection: 'row', flexWrap: 'wrap' },
-  calendarCell: { width: '14%', alignItems: 'center', marginBottom: 12, height: 58, justifyContent: 'flex-start' },
-  nonWorkingCalendarCell: { opacity: 0.7 },
+  calendarCell: { width: '14%', alignItems: 'center', marginBottom: 12, height: 44, justifyContent: 'flex-start' },
+
   dateCircle: { width: 32, height: 32, borderRadius: 16, justifyContent: 'center', alignItems: 'center' },
   activeDate: { backgroundColor: '#1E3A8A' },
-  nonWorkingDateCircle: { backgroundColor: '#EDF2F7' },
   dateText: { fontSize: 13, fontWeight: '600', color: '#1A202C' },
   activeDateText: { color: '#FFFFFF' },
-  nonWorkingDateText: { color: '#718096' },
-  calendarHolidayText: { maxWidth: '100%', fontSize: 8, lineHeight: 10, fontWeight: '700', color: '#718096', textAlign: 'center' },
   todayLabel: { fontSize: 8, fontWeight: '800', color: '#1E3A8A', position: 'absolute', bottom: -6 },
-  
+
+  sundayDate: { backgroundColor: '#F1F5F9' },
+  sundayDateText: { color: '#CBD5E0' },
+
+  holidayDate: { backgroundColor: '#F3E8FF' },
+  holidayDateText: { color: '#7C3AED', fontWeight: '700' },
+  holidayLabel: {
+    fontSize: 8,
+    fontWeight: '800',
+    color: '#7C3AED',
+    position: 'absolute',
+    bottom: -6,
+  },
+
   dotContainer: { flexDirection: 'row', marginTop: 2, height: 6, alignItems: 'center' },
   dot: { width: 5, height: 5, borderRadius: 2.5, marginHorizontal: 1 },
 
-  legendRow: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', marginTop: 10, borderTopWidth: 1, borderTopColor: '#E2E8F0', paddingTop: 16 },
-  legendItem: { flexDirection: 'row', alignItems: 'center', width: '48%', marginBottom: 8 },
-  legendDot: { width: 8, height: 8, borderRadius: 4, marginRight: 6 },
-  legendText: { fontSize: 10, color: '#4A5568', fontWeight: '500' },
+  legendRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    flexWrap: 'wrap',
+    marginTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: '#E2E8F0',
+    paddingTop: 16,
+  },
+  legendItem: { flexDirection: 'row', alignItems: 'center', marginRight: 8 },
+  legendDot: { width: 7, height: 7, borderRadius: 3.5, marginRight: 4 },
+  legendText: { fontSize: 9, color: '#4A5568', fontWeight: '600' },
+
   sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
   sectionTitleContainer: { flexDirection: 'row', alignItems: 'center' },
   sectionIcon: { marginRight: 6 },
@@ -1057,6 +1099,7 @@ const styles = StyleSheet.create({
   scheduledIconContainer: { marginRight: 12 },
   scheduledText: { flex: 1, fontSize: 12, fontWeight: '800', color: '#1E3A8A', letterSpacing: 0.5 },
   scheduledValue: { fontSize: 20, fontWeight: '800', color: '#1E3A8A' },
+
   detailsCard: { backgroundColor: '#1E3A8A', borderRadius: 12, padding: 20, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 8, elevation: 4, marginBottom: 20 },
   detailsHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 },
   detailsIconContainer: { width: 40, height: 40, borderRadius: 8, backgroundColor: 'rgba(255, 255, 255, 0.2)', justifyContent: 'center', alignItems: 'center' },
@@ -1064,13 +1107,53 @@ const styles = StyleSheet.create({
   eventBadgeText: { fontSize: 10, fontWeight: '700', color: '#FFFFFF' },
   detailsTitle: { fontSize: 20, fontWeight: '800', color: '#FFFFFF', marginBottom: 4 },
   detailsSubtitle: { fontSize: 14, color: '#A0C1DD', marginBottom: 16 },
-  detailsDescription: { fontSize: 13, color: '#E2E8F0', lineHeight: 20, marginBottom: 20 },
-  actionButtonsRow: { flexDirection: 'row', justifyContent: 'space-between' },
-  assignButton: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#FFFFFF', borderRadius: 8, paddingVertical: 14, marginRight: 8 },
-  assignButtonText: { fontSize: 14, fontWeight: '700', color: '#1E3A8A' },
-  addEventButton: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: 'transparent', borderWidth: 1, borderColor: '#FFFFFF', borderRadius: 8, paddingVertical: 14, marginLeft: 8 },
-  addEventButtonText: { fontSize: 14, fontWeight: '700', color: '#FFFFFF' },
-  
+
+  holidayBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(147, 51, 234, 0.25)',
+    borderWidth: 1,
+    borderColor: '#A78BFA',
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 12,
+  },
+  holidayBannerLabel: {
+    fontSize: 9,
+    fontWeight: '800',
+    color: '#DDD6FE',
+    letterSpacing: 1,
+    marginLeft: 10,
+  },
+  holidayBannerName: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    marginLeft: 10,
+    marginTop: 2,
+  },
+
+  summaryRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 16,
+  },
+  summaryItem: { flex: 1, alignItems: 'center' },
+  summaryLabel: { fontSize: 10, color: '#A0C1DD', fontWeight: '600', marginTop: 4, letterSpacing: 0.5 },
+  summaryValue: { fontSize: 18, color: '#FFFFFF', fontWeight: '800', marginTop: 2 },
+
+  detailsList: { marginTop: 4 },
+  detailsListTitle: { fontSize: 10, color: '#A0C1DD', fontWeight: '800', letterSpacing: 1, marginBottom: 8 },
+  detailsListItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: 6 },
+  detailsAvatar: { width: 28, height: 28, borderRadius: 14, justifyContent: 'center', alignItems: 'center', marginRight: 10 },
+  detailsAvatarText: { fontSize: 11, fontWeight: '700', color: '#FFFFFF' },
+  detailsListName: { flex: 1, fontSize: 13, color: '#FFFFFF', fontWeight: '600' },
+  detailsListTime: { fontSize: 12, color: '#A0C1DD', fontWeight: '600' },
+  detailsEmpty: { fontSize: 12, color: '#A0C1DD', fontStyle: 'italic', textAlign: 'center', paddingVertical: 8 },
+
   bottomNav: { position: 'absolute', bottom: 0, left: 0, right: 0, flexDirection: 'row', backgroundColor: '#FFFFFF', borderTopWidth: 1, borderTopColor: '#E5E7EB', paddingVertical: 10, paddingBottom: Platform.OS === 'ios' ? 25 : 10, justifyContent: 'space-around', alignItems: 'center' },
   navItem: { alignItems: 'center', justifyContent: 'center' },
   navIconContainer: { position: 'relative' },
@@ -1079,390 +1162,72 @@ const styles = StyleSheet.create({
   navText: { fontSize: 12, color: '#6B7280', marginTop: 4, fontWeight: '500' },
   navTextActive: { color: '#2563EB', fontWeight: '700' },
 
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  modalContent: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 20,
-    width: '100%',
-    maxWidth: 400,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-    elevation: 5,
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: '800',
-    color: '#1A202C',
-  },
-  modalSubtitle: {
-    fontSize: 13,
-    color: '#718096',
-    marginTop: 2,
-  },
-  inputLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#4A5568',
-    marginBottom: 8,
-  },
-  pickerWrapper: {
-    backgroundColor: '#F7FAFC',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    borderRadius: 8,
-    marginBottom: 20,
-    overflow: 'hidden',
-  },
-  picker: {
-    width: '100%',
-    height: 50,
-    color: '#1A202C',
-  },
-  inputWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F7FAFC',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    height: 50,
-    marginBottom: 24,
-  },
-  inputIcon: {
-    marginRight: 10,
-  },
-  input: {
-    flex: 1,
-    fontSize: 15,
-    color: '#1A202C',
-  },
-  modalActions: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  cancelButton: {
-    flex: 1,
-    backgroundColor: '#EDF2F7',
-    borderRadius: 8,
-    paddingVertical: 14,
-    alignItems: 'center',
-    marginRight: 8,
-  },
-  cancelButtonText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#4A5568',
-  },
-  saveButton: {
-    flex: 1,
-    backgroundColor: '#1E3A8A',
-    borderRadius: 8,
-    paddingVertical: 14,
-    alignItems: 'center',
-    marginLeft: 8,
-  },
-  saveButtonText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#FFFFFF',
-  },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.5)', justifyContent: 'center', alignItems: 'center', padding: 20 },
+  modalContent: { backgroundColor: '#FFFFFF', borderRadius: 16, padding: 20, width: '100%', maxWidth: 400, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 8, elevation: 5 },
+  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
+  modalTitle: { fontSize: 20, fontWeight: '800', color: '#1A202C' },
+  modalSubtitle: { fontSize: 13, color: '#718096', marginTop: 2 },
+  inputLabel: { fontSize: 14, fontWeight: '600', color: '#4A5568', marginBottom: 8 },
+  pickerWrapper: { backgroundColor: '#F7FAFC', borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 8, marginBottom: 20, overflow: 'hidden' },
+  picker: { width: '100%', height: 50, color: '#1A202C' },
+  inputWrapper: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F7FAFC', borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 8, paddingHorizontal: 12, height: 50, marginBottom: 24 },
+  inputIcon: { marginRight: 10 },
+  input: { flex: 1, fontSize: 15, color: '#1A202C' },
+  modalActions: { flexDirection: 'row', justifyContent: 'space-between' },
+  cancelButton: { flex: 1, backgroundColor: '#EDF2F7', borderRadius: 8, paddingVertical: 14, alignItems: 'center', marginRight: 8 },
+  cancelButtonText: { fontSize: 14, fontWeight: '700', color: '#4A5568' },
+  saveButton: { flex: 1, backgroundColor: '#1E3A8A', borderRadius: 8, paddingVertical: 14, alignItems: 'center', marginLeft: 8 },
+  saveButtonText: { fontSize: 14, fontWeight: '700', color: '#FFFFFF' },
 
-  dayModalContent: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 20,
-    width: '100%',
-    maxWidth: 400,
-    maxHeight: '80%',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-    elevation: 5,
-  },
-  totalHoursCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#EFF6FF',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: '#BFDBFE',
-  },
-  totalHoursIconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#DBEAFE',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  totalHoursTextContainer: {
-    flex: 1,
-  },
-  totalHoursLabel: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#1E3A8A',
-    letterSpacing: 0.5,
-    marginBottom: 2,
-  },
-  totalHoursValue: {
-    fontSize: 22,
-    fontWeight: '800',
-    color: '#1A202C',
-  },
-  shiftsList: {
-    maxHeight: 300,
-    marginBottom: 16,
-  },
-  shiftCard: {
-    backgroundColor: '#F7FAFC',
-    borderRadius: 10,
-    padding: 14,
-    marginBottom: 10,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-  },
-  shiftHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 10,
-  },
-  shiftHeaderLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-  },
-  shiftAvatar: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 10,
-  },
-  shiftAvatarText: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#FFFFFF',
-  },
-  shiftAssistantName: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#1A202C',
-    marginBottom: 2,
-  },
-  shiftPositionRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  shiftPosition: {
-    fontSize: 11,
-    color: '#718096',
-    marginLeft: 4,
-  },
-  shiftHoursBadge: {
-    backgroundColor: '#1E3A8A',
-    borderRadius: 10,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-  },
-  shiftHoursText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#FFFFFF',
-  },
-  shiftTimeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-  },
-  shiftTimeText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#4A5568',
-  },
-  
+  dayModalContent: { backgroundColor: '#FFFFFF', borderRadius: 16, padding: 20, width: '100%', maxWidth: 400, maxHeight: '80%', shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 8, elevation: 5 },
+  totalHoursCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#EFF6FF', borderRadius: 12, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: '#BFDBFE' },
+  totalHoursIconContainer: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#DBEAFE', justifyContent: 'center', alignItems: 'center', marginRight: 12 },
+  totalHoursTextContainer: { flex: 1 },
+  totalHoursLabel: { fontSize: 11, fontWeight: '700', color: '#1E3A8A', letterSpacing: 0.5, marginBottom: 2 },
+  totalHoursValue: { fontSize: 22, fontWeight: '800', color: '#1A202C' },
+  shiftsList: { maxHeight: 300, marginBottom: 16 },
+  shiftCard: { backgroundColor: '#F7FAFC', borderRadius: 10, padding: 14, marginBottom: 10, borderWidth: 1, borderColor: '#E2E8F0' },
+  shiftHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
+  shiftHeaderLeft: { flexDirection: 'row', alignItems: 'center', flex: 1 },
+  shiftAvatar: { width: 36, height: 36, borderRadius: 18, justifyContent: 'center', alignItems: 'center', marginRight: 10 },
+  shiftAvatarText: { fontSize: 13, fontWeight: '700', color: '#FFFFFF' },
+  shiftAssistantName: { fontSize: 14, fontWeight: '700', color: '#1A202C', marginBottom: 2 },
+  shiftPositionRow: { flexDirection: 'row', alignItems: 'center' },
+  shiftPosition: { fontSize: 11, color: '#718096', marginLeft: 4 },
+  shiftHoursBadge: { backgroundColor: '#1E3A8A', borderRadius: 10, paddingHorizontal: 10, paddingVertical: 4 },
+  shiftHoursText: { fontSize: 11, fontWeight: '700', color: '#FFFFFF' },
+  shiftTimeRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFFFFF', borderRadius: 6, paddingHorizontal: 10, paddingVertical: 8, borderWidth: 1, borderColor: '#E2E8F0' },
+  shiftTimeText: { fontSize: 13, fontWeight: '600', color: '#4A5568' },
+
   sectionContainer: { marginBottom: 16 },
   sectionHeaderTitle: { fontSize: 12, fontWeight: '800', color: '#1E3A8A', letterSpacing: 0.5, marginBottom: 8 },
   eventCard: { backgroundColor: '#FEF2F2', borderRadius: 10, padding: 14, marginBottom: 10, borderWidth: 1, borderColor: '#FECACA' },
   eventCardHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
   eventTypeText: { fontSize: 14, fontWeight: '700', color: '#1A202C' },
 
-  emptyState: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 30,
-  },
-  emptyStateText: {
-    fontSize: 13,
-    color: '#A0AEC0',
-    marginTop: 10,
-    fontStyle: 'italic',
-  },
-  closeModalButton: {
-    flex: 1,
-    backgroundColor: '#EDF2F7',
-    borderRadius: 8,
-    paddingVertical: 14,
-    alignItems: 'center',
-    marginRight: 8,
-  },
-  closeModalButtonText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#4A5568',
-  },
-  assignModalButton: {
-    flex: 1,
-    flexDirection: 'row',
-    backgroundColor: '#1E3A8A',
-    borderRadius: 8,
-    paddingVertical: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginLeft: 8,
-  },
-  assignModalButtonText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#FFFFFF',
-  },
-  
-  disabledButton: {
-    backgroundColor: '#A0AEC0',
-    opacity: 0.7,
-  },
+  emptyState: { alignItems: 'center', justifyContent: 'center', paddingVertical: 30 },
+  emptyStateText: { fontSize: 13, color: '#A0AEC0', marginTop: 10, fontStyle: 'italic' },
+  closeModalButton: { flex: 1, backgroundColor: '#EDF2F7', borderRadius: 8, paddingVertical: 14, alignItems: 'center', marginRight: 8 },
+  closeModalButtonText: { fontSize: 14, fontWeight: '700', color: '#4A5568' },
+  assignModalButton: { flex: 1, flexDirection: 'row', backgroundColor: '#1E3A8A', borderRadius: 8, paddingVertical: 14, alignItems: 'center', justifyContent: 'center', marginLeft: 8 },
+  assignModalButtonText: { fontSize: 14, fontWeight: '700', color: '#FFFFFF' },
+  disabledButton: { backgroundColor: '#A0AEC0', opacity: 0.7 },
 
-  datePickerOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  datePickerContent: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 16,
-    width: '100%',
-    maxWidth: 340,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-    elevation: 5,
-  },
-  datePickerHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  datePickerTitle: {
-    fontSize: 17,
-    fontWeight: '800',
-    color: '#1A202C',
-  },
-  datePickerNav: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  datePickerNavBtn: {
-    padding: 8,
-    backgroundColor: '#EDF2F7',
-    borderRadius: 6,
-  },
-  datePickerMonthText: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#1A202C',
-  },
-  datePickerDaysRow: {
-    flexDirection: 'row',
-    marginBottom: 8,
-  },
-  datePickerDayLabel: {
-    flex: 1,
-    textAlign: 'center',
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#718096',
-  },
-  datePickerGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    marginBottom: 16,
-  },
-  datePickerCell: {
-    width: '14.28%',
-    height: 48,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  datePickerDateCircle: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  datePickerSelectedCircle: {
-    backgroundColor: '#1E3A8A',
-  },
-  datePickerDateText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#1A202C',
-  },
-  datePickerHolidayText: {
-    maxWidth: '100%',
-    color: '#718096',
-    fontSize: 8,
-    lineHeight: 9,
-    fontWeight: '700',
-    textAlign: 'center',
-  },
-  datePickerSelectedText: {
-    color: '#FFFFFF',
-    fontWeight: '700',
-  },
-  datePickerCancelBtn: {
-    backgroundColor: '#EDF2F7',
-    borderRadius: 8,
-    paddingVertical: 12,
-    alignItems: 'center',
-  },
-  datePickerCancelText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#4A5568',
-  },
+  datePickerOverlay: { flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.5)', justifyContent: 'center', alignItems: 'center', padding: 20 },
+  datePickerContent: { backgroundColor: '#FFFFFF', borderRadius: 16, padding: 16, width: '100%', maxWidth: 340, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 8, elevation: 5 },
+  datePickerHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
+  datePickerTitle: { fontSize: 17, fontWeight: '800', color: '#1A202C' },
+  datePickerNav: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
+  datePickerNavBtn: { padding: 8, backgroundColor: '#EDF2F7', borderRadius: 6 },
+  datePickerMonthText: { fontSize: 15, fontWeight: '700', color: '#1A202C' },
+  datePickerDaysRow: { flexDirection: 'row', marginBottom: 8 },
+  datePickerDayLabel: { flex: 1, textAlign: 'center', fontSize: 11, fontWeight: '700', color: '#718096' },
+  datePickerGrid: { flexDirection: 'row', flexWrap: 'wrap', marginBottom: 16 },
+  datePickerCell: { width: '14.28%', aspectRatio: 1, alignItems: 'center', justifyContent: 'center' },
+  datePickerDateCircle: { width: 34, height: 34, borderRadius: 17, justifyContent: 'center', alignItems: 'center' },
+  datePickerSelectedCircle: { backgroundColor: '#1E3A8A' },
+  datePickerDateText: { fontSize: 13, fontWeight: '600', color: '#1A202C' },
+  datePickerSelectedText: { color: '#FFFFFF', fontWeight: '700' },
+  datePickerCancelBtn: { backgroundColor: '#EDF2F7', borderRadius: 8, paddingVertical: 12, alignItems: 'center' },
+  datePickerCancelText: { fontSize: 14, fontWeight: '700', color: '#4A5568' },
 });
