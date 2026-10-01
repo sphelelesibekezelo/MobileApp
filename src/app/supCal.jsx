@@ -1,21 +1,21 @@
 // src/app/supervisorDash.jsx
-import React, { useState } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  ScrollView, 
-  TouchableOpacity, 
-  Modal, 
-  TextInput, 
-  KeyboardAvoidingView, 
-  Platform,
-  Image, // Added Image import
+import { Ionicons } from '@expo/vector-icons';
+import { Picker } from '@react-native-picker/picker';
+import { useRouter } from 'expo-router';
+import { useState } from 'react';
+import {
+    Image,
+    KeyboardAvoidingView,
+    Modal,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
-import { Picker } from '@react-native-picker/picker'; 
 
 import logoImg from "@/assets/images/logo.png"; // Same logo path as other pages
 
@@ -56,6 +56,67 @@ const MONTH_NAMES = [
   "July", "August", "September", "October", "November", "December"
 ];
 
+const getDateKeyForDate = (date) => {
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${date.getFullYear()}-${month}-${day}`;
+};
+
+const getEasterSunday = (year) => {
+  const a = year % 19;
+  const b = Math.floor(year / 100);
+  const c = year % 100;
+  const d = Math.floor(b / 4);
+  const e = b % 4;
+  const f = Math.floor((b + 8) / 25);
+  const g = Math.floor((b - f + 1) / 3);
+  const h = (19 * a + b - d - g + 15) % 30;
+  const i = Math.floor(c / 4);
+  const k = c % 4;
+  const l = (32 + 2 * e + 2 * i - h - k) % 7;
+  const m = Math.floor((a + 11 * h + 22 * l) / 451);
+  const month = Math.floor((h + l - 7 * m + 114) / 31);
+  const day = ((h + l - 7 * m + 114) % 31) + 1;
+  return new Date(year, month - 1, day);
+};
+
+const getSouthAfricanHolidays = (year) => {
+  const easterSunday = getEasterSunday(year);
+  const addDays = (date, days) => new Date(year, date.getMonth(), date.getDate() + days);
+  const holidays = [
+    { date: new Date(year, 0, 1), name: "New Year's Day", label: 'New Year' },
+    { date: new Date(year, 2, 21), name: 'Human Rights Day', label: 'Human Rts' },
+    { date: addDays(easterSunday, -2), name: 'Good Friday', label: 'Good Friday' },
+    { date: addDays(easterSunday, 1), name: 'Family Day', label: 'Family Day' },
+    { date: new Date(year, 3, 27), name: 'Freedom Day', label: 'Freedom' },
+    { date: new Date(year, 4, 1), name: "Workers' Day", label: 'Workers' },
+    { date: new Date(year, 5, 16), name: 'Youth Day', label: 'Youth Day' },
+    { date: new Date(year, 7, 9), name: "National Women's Day", label: "Women's Day" },
+    { date: new Date(year, 8, 24), name: 'Heritage Day', label: 'Heritage' },
+    { date: new Date(year, 11, 16), name: 'Day of Reconciliation', label: 'Reconcil.' },
+    { date: new Date(year, 11, 25), name: 'Christmas Day', label: 'Christmas' },
+    { date: new Date(year, 11, 26), name: 'Day of Goodwill', label: 'Goodwill' },
+  ];
+  const holidayMap = {};
+
+  holidays.forEach((holiday) => {
+    holidayMap[getDateKeyForDate(holiday.date)] = holiday;
+    if (holiday.date.getDay() === 0) {
+      const observedDate = addDays(holiday.date, 1);
+      holidayMap[getDateKeyForDate(observedDate)] = {
+        ...holiday,
+        date: observedDate,
+        observed: true,
+      };
+    }
+  });
+
+  return holidayMap;
+};
+
+const getHolidayForDate = (date) => getSouthAfricanHolidays(date.getFullYear())[getDateKeyForDate(date)];
+const isNonWorkingDate = (date) => date.getDay() === 0 || Boolean(getHolidayForDate(date));
+
 // =====================================================
 // CUSTOM DATE PICKER COMPONENT
 // =====================================================
@@ -85,6 +146,7 @@ const CustomDatePicker = ({ visible, onClose, onSelect, initialDate }) => {
   const handleSelectDay = (day) => {
     if (day === '') return;
     const selected = new Date(year, month, day);
+    if (isNonWorkingDate(selected)) return;
     onSelect(selected);
     onClose();
   };
@@ -126,15 +188,39 @@ const CustomDatePicker = ({ visible, onClose, onSelect, initialDate }) => {
           </View>
 
           <View style={styles.datePickerGrid}>
-            {calendarDays.map((day, index) => (
-              <TouchableOpacity key={index} style={styles.datePickerCell} onPress={() => handleSelectDay(day)} disabled={day === ''}>
-                {day !== '' && (
-                  <View style={[styles.datePickerDateCircle, isSelected(day) && styles.datePickerSelectedCircle]}>
-                    <Text style={[styles.datePickerDateText, isSelected(day) && styles.datePickerSelectedText]}>{day}</Text>
-                  </View>
-                )}
-              </TouchableOpacity>
-            ))}
+            {calendarDays.map((day, index) => {
+              const date = day === '' ? null : new Date(year, month, day);
+              const holiday = date ? getHolidayForDate(date) : null;
+              const isUnavailable = date ? isNonWorkingDate(date) : false;
+              return (
+                <TouchableOpacity
+                  key={index}
+                  style={styles.datePickerCell}
+                  onPress={() => handleSelectDay(day)}
+                  disabled={day === '' || isUnavailable}
+                >
+                  {day !== '' && (
+                    <>
+                      <View style={[
+                        styles.datePickerDateCircle,
+                        isSelected(day) && !isUnavailable && styles.datePickerSelectedCircle,
+                      ]}>
+                        <Text style={[
+                          styles.datePickerDateText,
+                          isSelected(day) && !isUnavailable && styles.datePickerSelectedText,
+                          isUnavailable && styles.nonWorkingDateText,
+                        ]}>{day}</Text>
+                      </View>
+                      {isUnavailable && (
+                        <Text style={styles.datePickerHolidayText} numberOfLines={1}>
+                          {holiday?.label || 'Sunday'}
+                        </Text>
+                      )}
+                    </>
+                  )}
+                </TouchableOpacity>
+              );
+            })}
           </View>
 
           <TouchableOpacity style={styles.datePickerCancelBtn} onPress={onClose}>
@@ -220,6 +306,7 @@ export default function SupervisorDashboard() {
 
   const handleDayPress = (day) => {
     if (day === '') return;
+    if (isNonWorkingDate(new Date(year, month, day))) return;
     const dateKey = getDateKey(day);
     
     setSelectedDay({
@@ -233,12 +320,20 @@ export default function SupervisorDashboard() {
     setIsDayModalVisible(true);
   };
 
-  const handleEventDateSelect = (date) => setEventDate(date);
-  const handleShiftDateSelect = (date) => setShiftDate(date);
+  const handleEventDateSelect = (date) => {
+    if (!isNonWorkingDate(date)) setEventDate(date);
+  };
+  const handleShiftDateSelect = (date) => {
+    if (!isNonWorkingDate(date)) setShiftDate(date);
+  };
 
   const handleAddEvent = () => {
     if (!eventDate || !eventTime) {
       alert("Please fill in the date and time of the event.");
+      return;
+    }
+    if (isNonWorkingDate(eventDate)) {
+      alert('Events cannot be added on Sundays or public holidays.');
       return;
     }
     
@@ -268,6 +363,10 @@ export default function SupervisorDashboard() {
   const handleAssignShift = () => {
     if (!shiftDate || !shiftTime || !shiftDuration) {
       alert("Please fill in all fields including the date.");
+      return;
+    }
+    if (isNonWorkingDate(shiftDate)) {
+      alert('Shifts cannot be assigned on Sundays or public holidays.');
       return;
     }
 
@@ -379,7 +478,10 @@ export default function SupervisorDashboard() {
 
           <View style={styles.calendarGrid}>
             {calendarDays.map((day, index) => {
+              const cellDate = day === '' ? null : new Date(year, month, day);
               const dateKey = day !== '' ? getDateKey(day) : null;
+              const holiday = cellDate ? getHolidayForDate(cellDate) : null;
+              const isUnavailable = cellDate ? isNonWorkingDate(cellDate) : false;
               const hasShift = dateKey && shiftRecords[dateKey] && shiftRecords[dateKey].length > 0;
               const dayEvents = dateKey && events[dateKey] ? events[dateKey] : [];
               const hasEvent = dayEvents.length > 0;
@@ -387,17 +489,31 @@ export default function SupervisorDashboard() {
               return (
                 <TouchableOpacity 
                   key={index} 
-                  style={styles.calendarCell}
+                  style={[styles.calendarCell, isUnavailable && styles.nonWorkingCalendarCell]}
                   onPress={() => handleDayPress(day)}
-                  disabled={day === ''}
+                  disabled={day === '' || isUnavailable}
                   activeOpacity={0.7}
                 >
                   {day !== '' && (
-                    <View style={[styles.dateCircle, isToday(day) && styles.activeDate]}>
-                      <Text style={[styles.dateText, isToday(day) && styles.activeDateText]}>
+                    <View style={[
+                      styles.dateCircle,
+                      isUnavailable && styles.nonWorkingDateCircle,
+                      isToday(day) && !isUnavailable && styles.activeDate,
+                    ]}>
+                      <Text style={[
+                        styles.dateText,
+                        isUnavailable && styles.nonWorkingDateText,
+                        isToday(day) && !isUnavailable && styles.activeDateText,
+                      ]}>
                         {day}
                       </Text>
                     </View>
+                  )}
+
+                  {isUnavailable && (
+                    <Text style={styles.calendarHolidayText} numberOfLines={1}>
+                      {holiday?.label || 'Sunday'}
+                    </Text>
                   )}
                   
                   {day !== '' && (hasShift || hasEvent) && (
@@ -427,6 +543,10 @@ export default function SupervisorDashboard() {
             <View style={styles.legendItem}>
               <View style={[styles.legendDot, { backgroundColor: '#2563EB' }]} />
               <Text style={styles.legendText}>Daily Shift</Text>
+            </View>
+            <View style={styles.legendItem}>
+              <View style={[styles.legendDot, { backgroundColor: '#A0AEC0' }]} />
+              <Text style={styles.legendText}>Holiday / Sunday</Text>
             </View>
           </View>
         </View>
@@ -899,18 +1019,22 @@ const styles = StyleSheet.create({
   daysRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10 },
   dayLabel: { width: '14%', textAlign: 'center', fontSize: 12, fontWeight: '600', color: '#718096' },
   calendarGrid: { flexDirection: 'row', flexWrap: 'wrap' },
-  calendarCell: { width: '14%', alignItems: 'center', marginBottom: 12, height: 44, justifyContent: 'flex-start' },
+  calendarCell: { width: '14%', alignItems: 'center', marginBottom: 12, height: 58, justifyContent: 'flex-start' },
+  nonWorkingCalendarCell: { opacity: 0.7 },
   dateCircle: { width: 32, height: 32, borderRadius: 16, justifyContent: 'center', alignItems: 'center' },
   activeDate: { backgroundColor: '#1E3A8A' },
+  nonWorkingDateCircle: { backgroundColor: '#EDF2F7' },
   dateText: { fontSize: 13, fontWeight: '600', color: '#1A202C' },
   activeDateText: { color: '#FFFFFF' },
+  nonWorkingDateText: { color: '#718096' },
+  calendarHolidayText: { maxWidth: '100%', fontSize: 8, lineHeight: 10, fontWeight: '700', color: '#718096', textAlign: 'center' },
   todayLabel: { fontSize: 8, fontWeight: '800', color: '#1E3A8A', position: 'absolute', bottom: -6 },
   
   dotContainer: { flexDirection: 'row', marginTop: 2, height: 6, alignItems: 'center' },
   dot: { width: 5, height: 5, borderRadius: 2.5, marginHorizontal: 1 },
 
-  legendRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 10, borderTopWidth: 1, borderTopColor: '#E2E8F0', paddingTop: 16 },
-  legendItem: { flexDirection: 'row', alignItems: 'center' },
+  legendRow: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', marginTop: 10, borderTopWidth: 1, borderTopColor: '#E2E8F0', paddingTop: 16 },
+  legendItem: { flexDirection: 'row', alignItems: 'center', width: '48%', marginBottom: 8 },
   legendDot: { width: 8, height: 8, borderRadius: 4, marginRight: 6 },
   legendText: { fontSize: 10, color: '#4A5568', fontWeight: '500' },
   sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
@@ -1299,14 +1423,14 @@ const styles = StyleSheet.create({
   },
   datePickerCell: {
     width: '14.28%',
-    aspectRatio: 1,
+    height: 48,
     alignItems: 'center',
     justifyContent: 'center',
   },
   datePickerDateCircle: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -1317,6 +1441,14 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '600',
     color: '#1A202C',
+  },
+  datePickerHolidayText: {
+    maxWidth: '100%',
+    color: '#718096',
+    fontSize: 8,
+    lineHeight: 9,
+    fontWeight: '700',
+    textAlign: 'center',
   },
   datePickerSelectedText: {
     color: '#FFFFFF',
