@@ -147,7 +147,7 @@ export default function HomeScreen() {
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>AT A GLANCE</Text>
 
-          <TouchableOpacity onPress={() => router.push('/history')}>
+          <TouchableOpacity onPress={() => router.push('/studentHistory')}>
             <Text style={styles.sectionLink}>VIEW HISTORY</Text>
           </TouchableOpacity>
         </View>

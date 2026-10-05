@@ -5,15 +5,15 @@ import * as DocumentPicker from 'expo-document-picker';
 import { useRouter } from 'expo-router';
 import { useMemo, useRef, useState } from 'react';
 import {
-    Alert,
-    Image,
-    PanResponder,
-    SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Alert,
+  Image,
+  PanResponder,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 
 // ---------------------------------------------------------------------------
@@ -514,7 +514,7 @@ export default function StudentSchedule() {
         {/* HISTORY */}
         <TouchableOpacity
           style={styles.navItem}
-          onPress={() => router.push('/history')}
+          onPress={() => router.push('/studentHistory')}
         >
           <MaterialCommunityIcons
             name="history"
