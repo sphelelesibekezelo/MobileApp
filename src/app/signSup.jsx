@@ -86,9 +86,11 @@ export default function SignSup() {
           <View style={styles.formContainer}>
             
             {/* Header */}
-            <Text style={styles.portalAccess}>
-              <Ionicons name="shield-outline" size={12} color="#1E3A8A" /> FACULTY ACCESS
-            </Text>
+            <View style={styles.portalAccessContainer}>
+              <Ionicons name="shield-outline" size={14} color="#1E3A8A" style={{marginRight: 4}} />
+              <Text style={styles.portalAccessText}>FACULTY ACCESS</Text>
+            </View>
+            
             <Text style={styles.title}>Supervisor Registration</Text>
             <Text style={styles.subtitle}>
               Provide your staff details to join the portal.
@@ -182,7 +184,7 @@ export default function SignSup() {
 
             {/* Terms Text */}
             <Text style={styles.termsText}>
-              By clicking "Complete Registration " , you agree to the EduRegister Portal <Text style={styles.linkText}>Terms of Service</Text> and <Text style={styles.linkText}>Privacy Policy</Text>.
+              By clicking &quot;Complete Registration&quot;, you agree to the EduRegister Portal <Text style={styles.linkText}>Terms of Service</Text> and <Text style={styles.linkText}>Privacy Policy</Text>.
             </Text>
           </View>
 
@@ -227,14 +229,16 @@ const styles = StyleSheet.create({
   formContainer: {
     padding: 20,
   },
-  portalAccess: {
+  portalAccessContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  portalAccessText: {
     fontSize: 11,
     fontWeight: 'bold',
     color: '#1E3A8A',
     letterSpacing: 0.5,
-    marginBottom: 8,
-    flexDirection: 'row',
-    alignItems: 'center',
   },
   title: {
     fontSize: 24,

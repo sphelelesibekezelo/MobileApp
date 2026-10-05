@@ -3,12 +3,12 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import {
-    SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 
 const COLORS = {
@@ -208,7 +208,7 @@ export default function StudentNotifications() {
           />
 
           <Text style={styles.footerText}>
-            You're all caught up
+            You&apos;re all caught up
           </Text>
         </View>
       </ScrollView>
