@@ -250,8 +250,6 @@ export default function SupervisorDashboard() {
   const [isAssignModalVisible, setIsAssignModalVisible] = useState(false);
   const [selectedAssistant, setSelectedAssistant] = useState(assistants[0]?.name || '');
   const [selectedPosition, setSelectedPosition] = useState('Icenter');
-  const [shiftDate, setShiftDate] = useState(null);
-  const [showShiftDatePicker, setShowShiftDatePicker] = useState(false);
   const [shiftTime, setShiftTime] = useState('');
   const [shiftDuration, setShiftDuration] = useState('');
 
@@ -306,7 +304,6 @@ export default function SupervisorDashboard() {
   };
 
   const handleEventDateSelect = (date) => setEventDate(date);
-  const handleShiftDateSelect = (date) => setShiftDate(date);
 
   const handleAddEvent = () => {
     if (!eventDate || !eventTime) {
@@ -338,14 +335,19 @@ export default function SupervisorDashboard() {
   };
 
   const handleAssignShift = () => {
-    if (!shiftDate || !shiftTime || !shiftDuration) {
-      alert("Please fill in all fields including the date.");
+    // ✅ Removed the date validation since we automatically use the selectedDay's date
+    if (!shiftTime || !shiftDuration) {
+      alert("Please fill in the time and duration.");
       return;
     }
 
-    const m = shiftDate.getMonth();
-    const y = shiftDate.getFullYear();
-    const dateKey = getDateKey(shiftDate.getDate(), m, y);
+    if (!selectedDay) {
+      alert("No day selected. Please click a day on the calendar first.");
+      return;
+    }
+
+    // ✅ Automatically use the date from the day that was clicked
+    const dateKey = selectedDay.dateKey;
 
     const selectedAsst = assistants.find(a => a.name === selectedAssistant) || assistants[0];
 
@@ -364,13 +366,19 @@ export default function SupervisorDashboard() {
       [dateKey]: [...(prev[dateKey] || []), newShift]
     }));
 
-    alert(`Shift Assigned!\nAssistant: ${selectedAssistant}\nPosition: ${selectedPosition}\nDate: ${formatDate(shiftDate)}\nTime: ${shiftTime}\nDuration: ${shiftDuration} hours`);
+    alert(`Shift Assigned!\nAssistant: ${selectedAssistant}\nPosition: ${selectedPosition}\nDate: ${selectedDay.month} ${selectedDay.day}, ${selectedDay.year}\nTime: ${shiftTime}\nDuration: ${shiftDuration} hours`);
 
+    // Reset form
     setSelectedPosition('Icenter');
-    setShiftDate(null);
     setShiftTime('');
     setShiftDuration('');
     setIsAssignModalVisible(false);
+
+    // ✅ Also update the selectedDay state so the details modal reflects the new shift if reopened
+    setSelectedDay(prev => ({
+      ...prev,
+      shifts: [...(prev.shifts || []), newShift]
+    }));
   };
 
   const getTotalHours = () => {
@@ -900,6 +908,15 @@ export default function SupervisorDashboard() {
               </TouchableOpacity>
             </View>
 
+            <Text style={styles.inputLabel}>Date of Shift</Text>
+            {/* ✅ Display the selected date as read-only info */}
+            <View style={[styles.inputWrapper, { backgroundColor: '#F0F4F8', borderColor: '#E2E8F0' }]}>
+              <Ionicons name="calendar-outline" size={18} color="#A0AEC0" style={styles.inputIcon} />
+              <Text style={[styles.input, { color: '#4A5568', paddingTop: Platform.OS === 'ios' ? 12 : 0 }]}>
+                {selectedDay ? `${selectedDay.month} ${selectedDay.day}, ${selectedDay.year}` : 'No date selected'}
+              </Text>
+            </View>
+
             <Text style={styles.inputLabel}>Student Assistant</Text>
             <View style={styles.pickerWrapper}>
               <Picker
@@ -926,18 +943,6 @@ export default function SupervisorDashboard() {
                 <Picker.Item label="Help desk" value="Help desk" />
               </Picker>
             </View>
-
-            <Text style={styles.inputLabel}>Date of Shift</Text>
-            <TouchableOpacity
-              style={styles.inputWrapper}
-              onPress={() => setShowShiftDatePicker(true)}
-            >
-              <Ionicons name="calendar-outline" size={18} color="#A0AEC0" style={styles.inputIcon} />
-              <Text style={[styles.input, !shiftDate && { color: '#A0AEC0' }]}>
-                {shiftDate ? formatDate(shiftDate) : 'Tap to select a date'}
-              </Text>
-              <Ionicons name="chevron-down" size={18} color="#A0AEC0" />
-            </TouchableOpacity>
 
             <Text style={styles.inputLabel}>Shift Time</Text>
             <View style={styles.inputWrapper}>
@@ -976,18 +981,12 @@ export default function SupervisorDashboard() {
         </KeyboardAvoidingView>
       </Modal>
 
-      {/* CUSTOM DATE PICKERS */}
+      {/* CUSTOM DATE PICKER (Only needed for Event Modal now) */}
       <CustomDatePicker
         visible={showEventDatePicker}
         onClose={() => setShowEventDatePicker(false)}
         onSelect={handleEventDateSelect}
         initialDate={eventDate}
-      />
-      <CustomDatePicker
-        visible={showShiftDatePicker}
-        onClose={() => setShowShiftDatePicker(false)}
-        onSelect={handleShiftDateSelect}
-        initialDate={shiftDate}
       />
 
     </SafeAreaView>
