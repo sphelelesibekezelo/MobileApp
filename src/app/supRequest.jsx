@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import {
   Image,
+  Modal,
   Platform,
   ScrollView,
   StyleSheet,
@@ -15,6 +16,9 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import logoImg from "@/assets/images/logo.png"; // Same logo path as supervisorDash.jsx
+
+// Available Leave Types for Filtering
+const LEAVE_TYPES = ['All', 'Sick Leave', 'Personal Issues', 'Exam Leave', 'Day Off', 'Shift Swap'];
 
 // Reusable Submission Card Component
 const SubmissionCard = ({ item, onApprove, onReject }) => (
@@ -96,14 +100,19 @@ const SubmissionCard = ({ item, onApprove, onReject }) => (
 export default function SupervisorRequests() {
   const router = useRouter();
 
-  // Initial State for Submissions
+  // Search and Filter State
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isFilterModalVisible, setIsFilterModalVisible] = useState(false);
+  const [selectedLeaveType, setSelectedLeaveType] = useState('All');
+
+  // Initial State for Submissions (Updated with specific leave types)
   const [submissions, setSubmissions] = useState([
     {
       id: 1,
       name: 'Nkululeko Buthelezi',
       initials: 'NN',
       avatarColor: '#A78BFA',
-      type: 'SHIFT SWAP',
+      type: 'Shift Swap',
       reason: 'Requesting to swap Friday Evening (6PM) shift with Saturday Morning (8AM) due to academic exam preparation.',
       date: 'Oct 27 - Oct 28',
       status: 'PENDING',
@@ -113,19 +122,39 @@ export default function SupervisorRequests() {
       name: 'Judith Zondo',
       initials: 'JD',
       avatarColor: '#3B82F6',
-      type: 'LEAVE',
-      reason: 'Emergency family leave requested for three days. Documents will be uploaded to the portal by end of week.',
+      type: 'Sick Leave',
+      reason: 'Medical certificate attached. Requesting sick leave for three days due to flu.',
       date: 'Oct 30 - Nov 02',
       status: 'PENDING',
     },
     {
-      id: 3, // <-- FIXED: Changed from 2 to 3 to make it unique
+      id: 3,
       name: 'Sibekezelo Mnguni',
       initials: 'SS',
       avatarColor: '#3B82F6',
-      type: 'LEAVE',
-      reason: 'Emergency family leave requested for three days. Documents will be uploaded to the portal by end of week.',
-      date: 'Oct 30 - Nov 02',
+      type: 'Exam Leave',
+      reason: 'Requesting exam leave for upcoming final examinations. Timetable attached.',
+      date: 'Nov 05 - Nov 10',
+      status: 'PENDING',
+    },
+    {
+      id: 4,
+      name: 'Nkosi Nkosi',
+      initials: 'NK',
+      avatarColor: '#8B5CF6',
+      type: 'Personal Issues',
+      reason: 'Urgent family emergency requiring travel out of town.',
+      date: 'Nov 12 - Nov 15',
+      status: 'PENDING',
+    },
+    {
+      id: 5,
+      name: 'Thabo Mokoena',
+      initials: 'TM',
+      avatarColor: '#F59E0B',
+      type: 'Day Off',
+      reason: 'Requesting a standard day off for personal wellness.',
+      date: 'Nov 20',
       status: 'PENDING',
     },
   ]);
@@ -139,10 +168,17 @@ export default function SupervisorRequests() {
     );
   };
 
+  // Filter Logic
+  const filteredSubmissions = submissions.filter(item => {
+    const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesFilter = selectedLeaveType === 'All' || item.type === selectedLeaveType;
+    return matchesSearch && matchesFilter;
+  });
+
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
       
-      {/* Top Header (UPDATED to match supervisorDash.jsx) */}
+      {/* Top Header */}
       <View style={styles.header}>
         <View style={styles.headerLeft}>
           <Image
@@ -189,15 +225,38 @@ export default function SupervisorRequests() {
             style={styles.searchInput}
             placeholder="Search by student name..."
             placeholderTextColor="#A0AEC0"
+            value={searchQuery}
+            onChangeText={setSearchQuery}
           />
+          {searchQuery !== '' && (
+            <TouchableOpacity onPress={() => setSearchQuery('')}>
+              <Ionicons name="close-circle" size={20} color="#A0AEC0" />
+            </TouchableOpacity>
+          )}
         </View>
 
         {/* Filters */}
         <View style={styles.filtersRow}>
-          <TouchableOpacity style={styles.filterButton}>
-            <Ionicons name="filter-outline" size={16} color="#4A5568" style={{ marginRight: 6 }} />
-            <Text style={styles.filterText}>Filter Type</Text>
+          <TouchableOpacity 
+            style={[styles.filterButton, selectedLeaveType !== 'All' && styles.filterButtonActive]} 
+            onPress={() => setIsFilterModalVisible(true)}
+          >
+            <Ionicons 
+              name="filter-outline" 
+              size={16} 
+              color={selectedLeaveType !== 'All' ? '#FFFFFF' : '#4A5568'} 
+              style={{ marginRight: 6 }} 
+            />
+            <Text style={[styles.filterText, selectedLeaveType !== 'All' && styles.filterTextActive]}>
+              {selectedLeaveType === 'All' ? 'Filter Type' : selectedLeaveType}
+            </Text>
+            {selectedLeaveType !== 'All' && (
+              <View style={styles.filterBadgeActive}>
+                <Text style={styles.filterBadgeTextActive}>1</Text>
+              </View>
+            )}
           </TouchableOpacity>
+          
           <TouchableOpacity style={styles.filterButton}>
             <Ionicons name="calendar-outline" size={16} color="#4A5568" style={{ marginRight: 6 }} />
             <Text style={styles.filterText}>This Month</Text>
@@ -210,15 +269,22 @@ export default function SupervisorRequests() {
           <Text style={styles.sectionTitle}>RECENT SUBMISSIONS</Text>
         </View>
 
-        {/* Submissions List */}
-        {submissions.map((item) => (
-          <SubmissionCard 
-            key={item.id} 
-            item={item} 
-            onApprove={(id) => handleAction(id, 'APPROVED')}
-            onReject={(id) => handleAction(id, 'REJECTED')}
-          />
-        ))}
+        {/* Submissions List (Filtered) */}
+        {filteredSubmissions.length === 0 ? (
+          <View style={styles.emptyState}>
+            <Ionicons name="document-text-outline" size={48} color="#A0AEC0" />
+            <Text style={styles.emptyStateText}>No submissions found</Text>
+          </View>
+        ) : (
+          filteredSubmissions.map((item) => (
+            <SubmissionCard 
+              key={item.id} 
+              item={item} 
+              onApprove={(id) => handleAction(id, 'APPROVED')}
+              onReject={(id) => handleAction(id, 'REJECTED')}
+            />
+          ))
+        )}
 
         {/* View All History Link */}
         <TouchableOpacity
@@ -264,7 +330,7 @@ export default function SupervisorRequests() {
           <Text style={[styles.navText, styles.navTextActive]}>Requests</Text>
         </TouchableOpacity>
 
-        {/* Calendar Tab -> Navigates to supCal.jsx */}
+        {/* Calendar Tab */}
         <TouchableOpacity 
           style={styles.navItem} 
           onPress={() => router.push('/supCal')}
@@ -283,6 +349,59 @@ export default function SupervisorRequests() {
         </TouchableOpacity>
       </View>
 
+      {/* --- FILTER MODAL --- */}
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={isFilterModalVisible}
+        onRequestClose={() => setIsFilterModalVisible(false)}
+      >
+        <TouchableOpacity 
+          style={styles.modalOverlay} 
+          activeOpacity={1} 
+          onPress={() => setIsFilterModalVisible(false)}
+        >
+          <TouchableOpacity 
+            style={styles.filterModalContent} 
+            activeOpacity={1} 
+            onPress={(e) => e.stopPropagation()}
+          >
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Filter by Leave Type</Text>
+              <TouchableOpacity onPress={() => setIsFilterModalVisible(false)}>
+                <Ionicons name="close-circle" size={28} color="#A0AEC0" />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView showsVerticalScrollIndicator={false}>
+              {LEAVE_TYPES.map((type) => (
+                <TouchableOpacity
+                  key={type}
+                  style={[
+                    styles.filterOption,
+                    selectedLeaveType === type && styles.filterOptionActive
+                  ]}
+                  onPress={() => {
+                    setSelectedLeaveType(type);
+                    setIsFilterModalVisible(false);
+                  }}
+                >
+                  <Text style={[
+                    styles.filterOptionText,
+                    selectedLeaveType === type && styles.filterOptionTextActive
+                  ]}>
+                    {type}
+                  </Text>
+                  {selectedLeaveType === type && (
+                    <Ionicons name="checkmark-circle" size={20} color="#2563EB" />
+                  )}
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Modal>
+
     </SafeAreaView>
   );
 }
@@ -292,7 +411,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#8FB3D9', 
   },
-  // --- Header (updated to match supervisorDash.jsx) ---
+  // --- Header ---
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -416,10 +535,30 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
     elevation: 1,
   },
+  filterButtonActive: {
+    backgroundColor: '#2563EB',
+  },
   filterText: {
     fontSize: 13,
     fontWeight: '600',
     color: '#4A5568',
+  },
+  filterTextActive: {
+    color: '#FFFFFF',
+  },
+  filterBadgeActive: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 8,
+    width: 16,
+    height: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 6,
+  },
+  filterBadgeTextActive: {
+    color: '#2563EB',
+    fontSize: 9,
+    fontWeight: 'bold',
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -567,6 +706,17 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#16A34A',
   },
+  emptyState: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 40,
+  },
+  emptyStateText: {
+    fontSize: 14,
+    color: '#A0AEC0',
+    marginTop: 10,
+    fontWeight: '600',
+  },
   viewAllButton: {
     flexDirection: 'row',
     justifyContent: 'center',
@@ -639,5 +789,63 @@ const styles = StyleSheet.create({
   navTextActive: {
     color: '#2563EB',
     fontWeight: '700',
+  },
+  
+  // --- Filter Modal Styles ---
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  filterModalContent: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 20,
+    width: '100%',
+    maxWidth: 400,
+    maxHeight: '70%',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#1A202C',
+  },
+  filterOption: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderRadius: 10,
+    backgroundColor: '#F7FAFC',
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  filterOptionActive: {
+    backgroundColor: '#DBEAFE',
+    borderColor: '#2563EB',
+  },
+  filterOptionText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#4A5568',
+  },
+  filterOptionTextActive: {
+    color: '#1E3A8A',
+    fontWeight: '800',
   },
 });
