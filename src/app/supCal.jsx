@@ -244,7 +244,7 @@ export default function SupervisorDashboard() {
   const [eventDate, setEventDate] = useState(null);
   const [showEventDatePicker, setShowEventDatePicker] = useState(false);
   const [eventType, setEventType] = useState('Strike');
-  const [eventTime, setEventTime] = useState('');
+  // ✅ Removed eventTime state
 
   // Assign Shift Modal
   const [isAssignModalVisible, setIsAssignModalVisible] = useState(false);
@@ -306,8 +306,9 @@ export default function SupervisorDashboard() {
   const handleEventDateSelect = (date) => setEventDate(date);
 
   const handleAddEvent = () => {
-    if (!eventDate || !eventTime) {
-      alert("Please fill in the date and time of the event.");
+    // ✅ Removed eventTime validation
+    if (!eventDate) {
+      alert("Please fill in the date of the event.");
       return;
     }
 
@@ -318,7 +319,7 @@ export default function SupervisorDashboard() {
     const newEvent = {
       id: Date.now(),
       type: eventType,
-      time: eventTime,
+      // ✅ Removed time: eventTime,
     };
 
     setEvents(prev => ({
@@ -326,11 +327,12 @@ export default function SupervisorDashboard() {
       [dateKey]: [...(prev[dateKey] || []), newEvent]
     }));
 
-    alert(`Event Added!\nDate: ${formatDate(eventDate)}\nType: ${eventType}\nTime: ${eventTime}`);
+    // ✅ Updated alert to remove time
+    alert(`Event Added!\nDate: ${formatDate(eventDate)}\nType: ${eventType}`);
 
     setEventDate(null);
     setEventType('Strike');
-    setEventTime('');
+    // ✅ Removed setEventTime('');
     setIsEventModalVisible(false);
   };
 
@@ -865,17 +867,7 @@ export default function SupervisorDashboard() {
               </Picker>
             </View>
 
-            <Text style={styles.inputLabel}>Time of Event</Text>
-            <View style={styles.inputWrapper}>
-              <Ionicons name="time-outline" size={18} color="#A0AEC0" style={styles.inputIcon} />
-              <TextInput
-                style={styles.input}
-                placeholder="e.g. 14:00 - 16:00"
-                placeholderTextColor="#A0AEC0"
-                value={eventTime}
-                onChangeText={setEventTime}
-              />
-            </View>
+            {/* ✅ Removed the "Time of Event" text field entirely */}
 
             <View style={styles.modalActions}>
               <TouchableOpacity style={styles.cancelButton} onPress={() => setIsEventModalVisible(false)}>
