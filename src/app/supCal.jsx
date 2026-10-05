@@ -1,44 +1,44 @@
 // src/app/supervisorDash.jsx
-import React, { useState } from 'react';
+import { Ionicons } from '@expo/vector-icons';
+import { Picker } from '@react-native-picker/picker';
+import { useRouter } from 'expo-router';
+import { useState } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  Modal,
-  TextInput,
-  KeyboardAvoidingView,
-  Platform,
   Image,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
-import { Picker } from '@react-native-picker/picker';
 
 import logoImg from "@/assets/images/logo.png";
 
 // Combined list of assistants
 const assistants = [
-  { id: 1, name: 'Mathebula Nicholas', initials: 'MN', role: 'Student Assistant', status: 'ACTIVE', color: '#A78BFA' },
-  { id: 2, name: 'Jiyane Duduzile', initials: 'JD', role: 'Student Assistant', status: 'ACTIVE', color: '#A78BFA' },
-  { id: 3, name: 'Segomotsa Lencwe', initials: 'SM', role: 'Student Assistant', status: 'PENDING', color: '#A78BFA' },
+  { id: 1, name: 'Nkululeko Buthelezi', initials: 'NN', role: 'Student Assistant', status: 'ACTIVE', color: '#A78BFA' },
+  { id: 2, name: 'Mnguni Sibekezelo', initials: 'SS', role: 'Student Assistant', status: 'ACTIVE', color: '#A78BFA' },
+  { id: 3, name: 'Judith Zondo', initials: 'JD', role: 'Student Assistant', status: 'PENDING', color: '#A78BFA' },
 ];
 
 // Initial dummy data for shifts per day
 const initialShiftRecords = {
   '2026-08-05': [
-    { id: 1, assistant: 'Mathebula Nicholas', initials: 'MN', position: 'Icenter', time: '08:00 - 12:00', hours: '4h', color: '#A78BFA' },
-    { id: 2, assistant: 'Jiyane Duduzile', initials: 'JD', position: 'Help desk', time: '12:00 - 16:00', hours: '4h', color: '#A78BFA' },
-    { id: 3, assistant: 'Segomotsa Lencwe', initials: 'SM', position: 'Icenter', time: '16:00 - 18:00', hours: '2h', color: '#A78BFA' },
+    { id: 1, assistant: 'Nkululeko Buthelezi', initials: 'NN', position: 'Icenter', time: '08:00 - 12:00', hours: '4h', color: '#A78BFA' },
+    { id: 2, assistant: 'Mnguni Sibekezelo', initials: 'SS', position: 'Help desk', time: '12:00 - 16:00', hours: '4h', color: '#A78BFA' },
+    { id: 3, assistant: 'Judith Zondo', initials: 'JD', position: 'Icenter', time: '16:00 - 18:00', hours: '2h', color: '#A78BFA' },
   ],
   '2026-08-06': [
-    { id: 1, assistant: 'Mathebula Nicholas', initials: 'MN', position: 'Icenter', time: '09:00 - 13:00', hours: '4h', color: '#A78BFA' },
+    { id: 1, assistant: 'Nkululeko Buthelezi', initials: 'NN', position: 'Icenter', time: '09:00 - 13:00', hours: '4h', color: '#A78BFA' },
   ],
   '2026-08-07': [
-    { id: 1, assistant: 'Jiyane Duduzile', initials: 'JD', position: 'Help desk', time: '10:00 - 14:00', hours: '4h', color: '#A78BFA' },
-    { id: 2, assistant: 'Segomotsa Lencwe', initials: 'SM', position: 'Icenter', time: '14:00 - 18:00', hours: '4h', color: '#A78BFA' },
+    { id: 1, assistant: 'Nkululeko Buthelezi', initials: 'NN', position: 'Icenter', time: '10:00 - 14:00', hours: '4h', color: '#A78BFA' },
+    { id: 2, assistant: 'Mnguni Sibekezelo', initials: 'SS', position: 'Icenter', time: '14:00 - 18:00', hours: '4h', color: '#A78BFA' },
   ],
 };
 
@@ -419,7 +419,7 @@ export default function SupervisorDashboard() {
           </View>
         </View>
         <View style={styles.headerRight}>
-          <TouchableOpacity style={styles.iconButton} onPress={() => router.push('/supNotif')}>
+          <TouchableOpacity style={styles.iconButton} onPress={() => router.push('/supNotification')}>
             <Ionicons name="notifications-outline" size={22} color="#1E3A8A" />
           </TouchableOpacity>
           <TouchableOpacity style={styles.iconButton} onPress={() => router.push('/logOut')}>

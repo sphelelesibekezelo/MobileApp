@@ -1,19 +1,18 @@
 // src/app/supervisorDash.jsx
-import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  Image,
-  Modal,
-  Platform,
-  Alert,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { useState } from 'react';
+import {
+  Alert,
+  Image,
+  Modal,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import logoImg from "@/assets/images/logo.png";
 
@@ -21,10 +20,10 @@ import logoImg from "@/assets/images/logo.png";
 const initialRequests = [
   {
     id: 1,
-    name: 'Mathebula Nicholas',
-    initials: 'MN',
-    studentId: 'ST-2024-045',
-    email: 'mathebula.nicholas@university.edu',
+    name: 'Nkululeko Buthelezi',
+    initials: 'NN',
+    studentId: '222301042',
+    email: 'nkululeko@tut4life.ac.za',
     reason: 'Academic Commitment',
     type: 'LEAVE',
     date: '25 AUG 2026',
@@ -38,15 +37,15 @@ const initialRequests = [
   },
   {
     id: 2,
-    name: 'Hlongwane Jan',
-    initials: 'HJ',
-    studentId: 'ST-2024-021',
-    email: 'hlongwane.jan@university.edu',
+    name: 'Sibekezelo Mnguni',
+    initials: 'SS',
+    studentId: '223301240',
+    email: '223301240@tut4life.ac.za',
     reason: 'Exam Period',
     type: 'SHIFT SWAP',
     date: '20 AUG 2026',
-    period: '20 Aug - 22 Aug 2026',
-    duration: '3 days',
+    period: '20 Aug - 21 Aug 2026',
+    duration: '1 days',
     color: '#E9D8FD',
     avatarColor: '#8B5CF6',
     description:
@@ -55,15 +54,15 @@ const initialRequests = [
   },
   {
     id: 3,
-    name: 'Jeyane Duduzile',
+    name: 'Judith Zondo',
     initials: 'JD',
-    studentId: 'ST-2024-078',
-    email: 'jeyane.duduzile@university.edu',
+    studentId: '242201240',
+    email: 'Judith@tut4life.ac.za',
     reason: 'Medical Leave',
     type: 'LEAVE',
     date: '18 AUG 2026',
     period: '18 Aug - 20 Aug 2026',
-    duration: '3 days',
+    duration: '2 days',
     color: '#E9D8FD',
     avatarColor: '#8B5CF6',
     description:

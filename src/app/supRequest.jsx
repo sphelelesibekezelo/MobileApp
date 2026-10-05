@@ -100,8 +100,8 @@ export default function SupervisorRequests() {
   const [submissions, setSubmissions] = useState([
     {
       id: 1,
-      name: 'Hlongwane Jan',
-      initials: 'HJ',
+      name: 'Nkululeko Buthelezi',
+      initials: 'NN',
       avatarColor: '#A78BFA',
       type: 'SHIFT SWAP',
       reason: 'Requesting to swap Friday Evening (6PM) shift with Saturday Morning (8AM) due to academic exam preparation.',
@@ -110,8 +110,18 @@ export default function SupervisorRequests() {
     },
     {
       id: 2,
-      name: 'Jordan Smith',
-      initials: 'JS',
+      name: 'Judith Zondo',
+      initials: 'JD',
+      avatarColor: '#3B82F6',
+      type: 'LEAVE',
+      reason: 'Emergency family leave requested for three days. Documents will be uploaded to the portal by end of week.',
+      date: 'Oct 30 - Nov 02',
+      status: 'PENDING',
+    },
+    {
+      id: 3, // <-- FIXED: Changed from 2 to 3 to make it unique
+      name: 'Sibekezelo Mnguni',
+      initials: 'SS',
       avatarColor: '#3B82F6',
       type: 'LEAVE',
       reason: 'Emergency family leave requested for three days. Documents will be uploaded to the portal by end of week.',
