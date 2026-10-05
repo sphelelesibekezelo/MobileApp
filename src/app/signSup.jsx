@@ -182,7 +182,7 @@ export default function SignSup() {
 
             {/* Terms Text */}
             <Text style={styles.termsText}>
-              By clicking "Complete Registration", you agree to the EduRegister Portal <Text style={styles.linkText}>Terms of Service</Text> and <Text style={styles.linkText}>Privacy Policy</Text>.
+              By clicking "Complete Registration " , you agree to the EduRegister Portal <Text style={styles.linkText}>Terms of Service</Text> and <Text style={styles.linkText}>Privacy Policy</Text>.
             </Text>
           </View>
 

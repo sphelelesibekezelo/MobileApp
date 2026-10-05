@@ -656,14 +656,15 @@ function DateRangeModal({ visible, initialStart, initialEnd, onClose, onApply, o
   const [start, setStart] = useState(initialStart);
   const [end, setEnd] = useState(initialEnd);
 
-  // Re-sync with the saved range every time the popup opens
+  // Re-sync with the saved range every time the popup opens or props change
   useEffect(() => {
     if (visible) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setStart(initialStart);
       setEnd(initialEnd);
       setViewMonth(startOfMonth(initialStart || new Date()));
     }
-  }, [visible]);
+  }, [visible, initialStart, initialEnd]);
 
   const today = dayOnly(new Date());
 
@@ -1090,7 +1091,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#111827',
     marginLeft: 8,
-    paddingVertical: 2,
+    paddingVertical: Platform.OS === 'ios' ? 2 : 0, // Adjusted for cross-platform consistency
   },
 
   textAreaRow: {

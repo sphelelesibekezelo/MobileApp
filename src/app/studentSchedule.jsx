@@ -236,7 +236,7 @@ export default function StudentSchedule() {
           </View>
 
           {/* Week Strip (tap a day, use the arrows, or swipe left/right) */}
-          <View style={styles.weekRow} {...panResponder.panHandlers}>
+          <View style={styles.weekRow}>
             {weekDays.map(({ date, rule }, index) => {
               const isSelected = sameDay(date, selectedDate);
               const isToday = sameDay(date, today);
