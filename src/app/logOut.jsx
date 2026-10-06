@@ -26,8 +26,8 @@ export default function LogoutModal({ visible, onClose, onConfirm }) {
           {/* Text Content */}
           <Text style={styles.modalTitle}>Log out?</Text>
           <Text style={styles.modalSubtitle}>
-            You'll need to sign in again to access your dashboard.
-          </Text>
+          {"You'll need to sign in again to access your dashboard."}
+        </Text>
 
           {/* Buttons */}
           <View style={styles.modalActionRow}>

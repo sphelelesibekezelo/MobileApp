@@ -140,7 +140,7 @@ export default function OperationalRequests() {
 
             {/* Card Body: Details */}
             <View style={styles.requestBody}>
-              <Text style={styles.requestQuote}>"I miss my family"</Text>
+              <Text style={styles.requestQuote}>{"I miss my family"}</Text>
               
               <View style={styles.requestMetaRow}>
                 <Feather name="calendar" size={12} color={COLORS.textMuted} />

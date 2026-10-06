@@ -182,8 +182,7 @@ export default function LoginScreen() {
 
               {/* Card Footer */}
               <View style={styles.cardFooter}>
-                <Text style={styles.cardFooterText}>Don't have an account? </Text>
-                <TouchableOpacity>
+<Text style={styles.cardFooterText}>{"Don't have an account? "}</Text>                <TouchableOpacity>
                   <Text style={styles.registerLink}>Register here</Text>
                 </TouchableOpacity>
               </View>
@@ -221,8 +220,8 @@ export default function LoginScreen() {
 
             {/* Modal Description */}
             <Text style={styles.modalDescription}>
-              Enter your Staff/Student No. and registered email address. We'll send you instructions to reset your password.
-            </Text>
+            {"Enter your Staff/Student No. and registered email address. We'll send you instructions to reset your password."}
+          </Text>
 
             {/* Staff/Student No. Input */}
             <View style={styles.modalInputGroup}>

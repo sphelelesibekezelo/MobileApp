@@ -202,7 +202,7 @@ export default function LandingPage() {
         <View style={[styles.section, styles.bgAlt, isDarkMode && styles.bgAltDark]}>
           <Text style={[styles.sectionTitleCenter, isDarkMode && styles.textDark]}>Built for Every Role</Text>
           <Text style={[styles.sectionDescCenter, isDarkMode && styles.textDarkMuted]}>
-            Whether you're a department head or a student worker, Student Assistant Tracker simplifies your workflow.
+            {"Whether you're a department head or a student worker, Student Assistant Tracker simplifies your workflow."}
           </Text>
 
           <View style={styles.rolesContainer}>

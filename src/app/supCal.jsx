@@ -1,7 +1,6 @@
 import { Feather } from '@expo/vector-icons';
 import { useState } from 'react';
 import {
-  Dimensions,
   ImageBackground,
   SafeAreaView,
   ScrollView,
@@ -28,8 +27,6 @@ const COLORS = {
   grayLight: '#F3F4F6',
   grayText: '#4B5563',
 };
-
-const SCREEN_WIDTH = Dimensions.get('window').width;
 
 // --- Mock Data for Calendar ---
 const weekDays = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
@@ -100,8 +97,8 @@ export default function MasterSchedule() {
               </View>
             </View>
             <Text style={styles.pageSubtitle}>
-              Manage every student assistant's shifts from a single monthly view. Each student has a unique color.
-            </Text>
+            {"Manage every student assistant's shifts from a single monthly view. Each student has a unique color."}
+          </Text>
           </View>
 
           {/* --- STATS ROW --- */}
@@ -162,12 +159,12 @@ export default function MasterSchedule() {
                   <View key={index} style={[styles.dayCell, item.selected && styles.dayCellSelected]}>
                     <Text style={[styles.dayText, !item.current && styles.dayTextMuted]}>{item.day}</Text>
                     {/* Mock Event Tags */}
-                    {item.day === '28' && <View style={[styles.eventTag, { backgroundColor: COLORS.purpleLight }]}><Text style={[styles.eventText, { color: COLORS.purpleText }]}>PETER THOMAS</Text></View>}
-                    {item.day === '29' && <View style={[styles.eventTag, { backgroundColor: COLORS.grayLight }]}><Text style={[styles.eventText, { color: COLORS.grayText }]}>APPROVED LEA...</Text></View>}
-                    {item.day === '30' && <View style={[styles.eventTag, { backgroundColor: COLORS.purpleLight }]}><Text style={[styles.eventText, { color: COLORS.purpleText }]}>PETER THOMAS</Text></View>}
-                    {item.day === '7' && <View style={[styles.eventTag, { backgroundColor: COLORS.grayLight }]}><Text style={[styles.eventText, { color: COLORS.grayText }]}>APPROVED LEA...</Text></View>}
-                    {item.day === '15' && <View style={[styles.eventTag, { backgroundColor: COLORS.purpleLight }]}><Text style={[styles.eventText, { color: COLORS.purpleText }]}>SARAH NKOSI</Text></View>}
-                    {item.day === '15' && <View style={[styles.eventTag, { backgroundColor: COLORS.purpleLight, marginTop: 2 }]}><Text style={[styles.eventText, { color: COLORS.purpleText }]}>PETER THOMAS</Text></View>}
+                    {item.day === '28' && <View style={[styles.eventTag, { backgroundColor: COLORS.purpleLight }]}><Text style={[styles.eventText, { color: COLORS.purpleText }]} numberOfLines={1}>PETER THOMAS</Text></View>}
+                    {item.day === '29' && <View style={[styles.eventTag, { backgroundColor: COLORS.grayLight }]}><Text style={[styles.eventText, { color: COLORS.grayText }]} numberOfLines={1}>APPROVED LEA...</Text></View>}
+                    {item.day === '30' && <View style={[styles.eventTag, { backgroundColor: COLORS.purpleLight }]}><Text style={[styles.eventText, { color: COLORS.purpleText }]} numberOfLines={1}>PETER THOMAS</Text></View>}
+                    {item.day === '7' && <View style={[styles.eventTag, { backgroundColor: COLORS.grayLight }]}><Text style={[styles.eventText, { color: COLORS.grayText }]} numberOfLines={1}>APPROVED LEA...</Text></View>}
+                    {item.day === '15' && <View style={[styles.eventTag, { backgroundColor: COLORS.purpleLight }]}><Text style={[styles.eventText, { color: COLORS.purpleText }]} numberOfLines={1}>SARAH NKOSI</Text></View>}
+                    {item.day === '15' && <View style={[styles.eventTag, { backgroundColor: COLORS.purpleLight, marginTop: 2 }]}><Text style={[styles.eventText, { color: COLORS.purpleText }]} numberOfLines={1}>PETER THOMAS</Text></View>}
                   </View>
                 ))}
               </View>
@@ -305,23 +302,24 @@ const styles = StyleSheet.create({
   titleSection: { marginBottom: 16 },
   titleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
   pageTitle: { fontSize: 24, fontWeight: 'bold', color: COLORS.darkBlue, fontFamily: 'serif' },
-  actionButtons: { flexDirection: 'row', gap: 8 },
+  actionButtons: { flexDirection: 'row' },
   refreshButton: {
     backgroundColor: '#FFF', borderWidth: 1, borderColor: COLORS.border,
-    padding: 8, borderRadius: 6,
+    padding: 8, borderRadius: 6, marginRight: 8, // Replaced gap
   },
   newShiftButton: {
     backgroundColor: COLORS.primary, flexDirection: 'row', alignItems: 'center',
-    paddingHorizontal: 12, paddingVertical: 8, borderRadius: 6, gap: 4,
+    paddingHorizontal: 12, paddingVertical: 8, borderRadius: 6,
   },
-  newShiftText: { color: '#FFF', fontSize: 12, fontWeight: 'bold' },
+  newShiftText: { color: '#FFF', fontSize: 12, fontWeight: 'bold', marginLeft: 4 }, // Replaced gap
   pageSubtitle: { fontSize: 13, color: COLORS.textMuted, lineHeight: 18 },
 
   // Stats Row
-  statsRow: { flexDirection: 'row', gap: 8, marginBottom: 16 },
+  statsRow: { flexDirection: 'row', marginBottom: 16, justifyContent: 'space-between' }, // Replaced gap with space-between
   statCard: {
     flex: 1, backgroundColor: COLORS.card, padding: 12, borderRadius: 8,
     borderWidth: 1, borderColor: COLORS.border, flexDirection: 'row', alignItems: 'center',
+    marginHorizontal: 4, // Added spacing
   },
   statIndicator: { width: 4, height: 24, borderRadius: 2, marginRight: 8 },
   statLabel: { fontSize: 8, fontWeight: 'bold', color: COLORS.textMuted, letterSpacing: 0.5 },
@@ -341,13 +339,13 @@ const styles = StyleSheet.create({
   },
   calendarTitle: { fontSize: 16, fontWeight: 'bold', color: COLORS.darkBlue },
   calendarSubtitle: { fontSize: 11, color: COLORS.textMuted },
-  calendarControls: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  calendarControls: { flexDirection: 'row', alignItems: 'center' },
   calendarNavBtn: {
     padding: 6, backgroundColor: COLORS.grayLight, borderRadius: 4,
   },
   todayBtn: {
     backgroundColor: '#FFF', borderWidth: 1, borderColor: COLORS.border,
-    paddingHorizontal: 8, paddingVertical: 6, borderRadius: 4,
+    paddingHorizontal: 8, paddingVertical: 6, borderRadius: 4, marginHorizontal: 4, // Replaced gap
   },
   todayBtnText: { fontSize: 10, fontWeight: 'bold', color: COLORS.textMain },
 
@@ -369,18 +367,18 @@ const styles = StyleSheet.create({
   // Legend
   legendContainer: { marginTop: 8, paddingTop: 12, borderTopWidth: 1, borderTopColor: COLORS.border },
   legendTitle: { fontSize: 10, fontWeight: 'bold', color: COLORS.textMain, marginBottom: 8 },
-  legendRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginBottom: 8 },
-  legendItem: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  legendDot: { width: 6, height: 6, borderRadius: 3 },
+  legendRow: { flexDirection: 'row', flexWrap: 'wrap', marginBottom: 8 },
+  legendItem: { flexDirection: 'row', alignItems: 'center', marginRight: 12 }, // Replaced gap
+  legendDot: { width: 6, height: 6, borderRadius: 3, marginRight: 4 }, // Replaced gap
   legendText: { fontSize: 10, color: COLORS.textMuted },
-  legendDescRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  legendDesc: { fontSize: 9, color: COLORS.textMuted },
+  legendDescRow: { flexDirection: 'row', flexWrap: 'wrap' },
+  legendDesc: { fontSize: 9, color: COLORS.textMuted, marginRight: 8, marginBottom: 4 }, // Replaced gap
 
   // Side Panel (Stacked Cards)
-  sidePanel: { gap: 16 },
+  sidePanel: { marginBottom: 16 },
   panelCard: {
     backgroundColor: COLORS.card, borderRadius: 12, padding: 16,
-    borderWidth: 1, borderColor: COLORS.border,
+    borderWidth: 1, borderColor: COLORS.border, marginBottom: 16, // Replaced gap
     shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 2,
   },
   panelDate: { fontSize: 18, fontWeight: 'bold', color: COLORS.darkBlue, marginBottom: 4 },
@@ -388,9 +386,9 @@ const styles = StyleSheet.create({
   closureButton: {
     flexDirection: 'row', justifyContent: 'center', alignItems: 'center',
     borderWidth: 1, borderColor: COLORS.danger, borderRadius: 6,
-    paddingVertical: 8, gap: 6, marginBottom: 12,
+    paddingVertical: 8, marginBottom: 12,
   },
-  closureButtonText: { color: COLORS.danger, fontSize: 12, fontWeight: 'bold' },
+  closureButtonText: { color: COLORS.danger, fontSize: 12, fontWeight: 'bold', marginLeft: 6 }, // Replaced gap
   noShiftsBox: {
     backgroundColor: '#F9FAFB', padding: 16, borderRadius: 8,
     alignItems: 'center', justifyContent: 'center',
@@ -399,8 +397,8 @@ const styles = StyleSheet.create({
 
   // Tips Card
   tipsCard: { backgroundColor: '#F0FDF4', borderColor: '#DCFCE7' },
-  panelHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 },
-  panelTitle: { fontSize: 14, fontWeight: 'bold', color: COLORS.textMain },
+  panelHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
+  panelTitle: { fontSize: 14, fontWeight: 'bold', color: COLORS.textMain, marginLeft: 8 }, // Replaced gap
   tipText: { fontSize: 12, color: COLORS.textMuted, marginBottom: 4, lineHeight: 16 },
 
   // View Timetable Card
