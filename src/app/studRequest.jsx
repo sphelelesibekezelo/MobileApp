@@ -213,7 +213,6 @@ function SwapForm() {
   const { c } = useStudTheme();
   const saved = drafts.swap || {};
   const [currentKey, setCurrentKey] = useState(saved.currentKey || SHIFT_OPTIONS[0].value);
-  const [numShifts, setNumShifts] = useState('1');
   const [newKey, setNewKey] = useState(saved.newKey || '');
   const [assistant, setAssistant] = useState(saved.assistant || '');
   const [reason, setReason] = useState(saved.reason || '');
@@ -284,14 +283,6 @@ function SwapForm() {
             setCurrentKey(v);
             if (newKey === v) setNewKey('');
           }}
-        />
-        <SelectField
-          upper
-          label="Number of shifts"
-          value={numShifts}
-          options={[{ value: '1', label: '1 shift' }]}
-          onChange={setNumShifts}
-          helper="Shift Swap is limited to 1 current shift and 1 replacement date per request."
         />
 
         <Text style={[styles.step, { color: c.text }]}>2. NEW SHIFT DATE</Text>
