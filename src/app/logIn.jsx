@@ -16,8 +16,8 @@ import {
 
 // --- Theme Colors ---
 const COLORS = {
-  primary: '#2563EB', // Bright blue
-  darkBlue: '#1E3A8A', // Dark blue heading
+  primary: '#2563EB',
+  darkBlue: '#1E3A8A',
   textMain: '#111827',
   textMuted: '#6B7280',
   bg: '#FFFFFF',
@@ -26,8 +26,9 @@ const COLORS = {
   inputBg: '#F9FAFB',
   toggleBg: '#F3F4F6',
   modalOverlay: 'rgba(0, 0, 0, 0.5)',
-  resetBtnBg: '#DBEAFE', // Light blue for reset button
-  resetBtnText: '#1E3A8A', // Dark blue for reset button text
+  resetBtnBg: '#DBEAFE',
+  resetBtnText: '#1E3A8A',
+  danger: '#EF4444',
 };
 
 export default function LoginScreen() {
@@ -54,7 +55,7 @@ export default function LoginScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" />
-      
+
       {/* Background Image with Overlay */}
       <ImageBackground
         source={{ uri: 'https://images.unsplash.com/photo-1507842217343-583bb7270b66?q=80&w=1590&auto=format&fit=crop' }}
@@ -64,7 +65,7 @@ export default function LoginScreen() {
         <View style={styles.overlay} />
 
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-          
+
           {/* --- HEADER --- */}
           <View style={styles.header}>
             <View style={styles.logoContainer}>
@@ -76,13 +77,15 @@ export default function LoginScreen() {
             </View>
             <TouchableOpacity style={styles.themeToggle}>
               <Feather name="moon" size={14} color={COLORS.textMuted} />
-              <Text style={styles.themeText}>Change mode <Text style={{ color: '#F59E0B' }}>Dark</Text></Text>
+              <Text style={styles.themeText}>
+                Change mode <Text style={{ color: '#F59E0B' }}>Dark</Text>
+              </Text>
             </TouchableOpacity>
           </View>
 
           {/* --- MAIN CONTENT --- */}
           <View style={styles.mainContent}>
-            
+
             {/* Welcome Section */}
             <View style={styles.welcomeSection}>
               <View style={styles.tag}>
@@ -131,7 +134,9 @@ export default function LoginScreen() {
 
               {/* Form Fields */}
               <View style={styles.inputGroup}>
-                <Text style={styles.label}>University email <Text style={styles.required}>*</Text></Text>
+                <Text style={styles.label}>
+                  University email <Text style={styles.required}>*</Text>
+                </Text>
                 <View style={styles.inputWrapper}>
                   <Feather name="mail" size={16} color={COLORS.textMuted} style={styles.inputIcon} />
                   <TextInput
@@ -147,7 +152,9 @@ export default function LoginScreen() {
               </View>
 
               <View style={styles.inputGroup}>
-                <Text style={styles.label}>Password <Text style={styles.required}>*</Text></Text>
+                <Text style={styles.label}>
+                  Password <Text style={styles.required}>*</Text>
+                </Text>
                 <View style={styles.inputWrapper}>
                   <Feather name="lock" size={16} color={COLORS.textMuted} style={styles.inputIcon} />
                   <TextInput
@@ -166,8 +173,8 @@ export default function LoginScreen() {
 
               {/* Options Row */}
               <View style={styles.optionsRow}>
-                <TouchableOpacity 
-                  style={styles.checkboxContainer} 
+                <TouchableOpacity
+                  style={styles.checkboxContainer}
                   onPress={() => setKeepSignedIn(!keepSignedIn)}
                 >
                   <View style={[styles.checkbox, keepSignedIn && styles.checkboxChecked]}>
@@ -175,8 +182,8 @@ export default function LoginScreen() {
                   </View>
                   <Text style={styles.checkboxText}>Keep me signed in</Text>
                 </TouchableOpacity>
-                
-                {/* --- FORGOT PASSWORD TRIGGER --- */}
+
+                {/* FORGOT PASSWORD TRIGGER */}
                 <TouchableOpacity onPress={() => setIsForgotModalVisible(true)}>
                   <Text style={styles.forgotPassword}>Forgot password?</Text>
                 </TouchableOpacity>
@@ -192,7 +199,9 @@ export default function LoginScreen() {
 
               {/* Card Footer */}
               <View style={styles.cardFooter}>
-<Text style={styles.cardFooterText}>{"Don't have an account? "}</Text>                <TouchableOpacity>
+                <Text style={styles.cardFooterText}>{"Don't have an account? "}</Text>
+                {/* UPDATED: Now navigates to signStud.jsx */}
+                <TouchableOpacity onPress={() => router.push('/signStud')}>
                   <Text style={styles.registerLink}>Register here</Text>
                 </TouchableOpacity>
               </View>
@@ -202,9 +211,13 @@ export default function LoginScreen() {
           {/* --- PAGE FOOTER --- */}
           <View style={styles.pageFooter}>
             <Text style={styles.footerText}>Need help? </Text>
-            <TouchableOpacity><Text style={styles.footerLink}>Contact iCenter support</Text></TouchableOpacity>
+            <TouchableOpacity>
+              <Text style={styles.footerLink}>Contact iCenter support</Text>
+            </TouchableOpacity>
             <Text style={styles.footerText}> • </Text>
-            <TouchableOpacity><Text style={styles.footerLink}>Return home</Text></TouchableOpacity>
+            <TouchableOpacity>
+              <Text style={styles.footerLink}>Return home</Text>
+            </TouchableOpacity>
           </View>
 
         </ScrollView>
@@ -219,7 +232,7 @@ export default function LoginScreen() {
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContainer}>
-            
+
             {/* Modal Header */}
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Forgot your password?</Text>
@@ -230,12 +243,14 @@ export default function LoginScreen() {
 
             {/* Modal Description */}
             <Text style={styles.modalDescription}>
-            {"Enter your Staff/Student No. and registered email address. We'll send you instructions to reset your password."}
-          </Text>
+              {"Enter your Staff/Student No. and registered email address. We'll send you instructions to reset your password."}
+            </Text>
 
             {/* Staff/Student No. Input */}
             <View style={styles.modalInputGroup}>
-              <Text style={styles.modalLabel}>Staff/Student No. <Text style={styles.required}>*</Text></Text>
+              <Text style={styles.modalLabel}>
+                Staff/Student No. <Text style={styles.required}>*</Text>
+              </Text>
               <View style={styles.modalInputWrapper}>
                 <Feather name="user" size={16} color={COLORS.textMuted} style={styles.inputIcon} />
                 <TextInput
@@ -250,7 +265,9 @@ export default function LoginScreen() {
 
             {/* Email Address Input */}
             <View style={styles.modalInputGroup}>
-              <Text style={styles.modalLabel}>Email Address <Text style={styles.required}>*</Text></Text>
+              <Text style={styles.modalLabel}>
+                Email Address <Text style={styles.required}>*</Text>
+              </Text>
               <View style={styles.modalInputWrapper}>
                 <Feather name="mail" size={16} color={COLORS.textMuted} style={styles.inputIcon} />
                 <TextInput
@@ -266,7 +283,7 @@ export default function LoginScreen() {
             </View>
 
             {/* Submit Reset Link Button */}
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.modalSubmitButton}
               onPress={() => {
                 // Handle send reset link logic here
@@ -298,7 +315,7 @@ const styles = StyleSheet.create({
     padding: 20,
     justifyContent: 'space-between',
   },
-  
+
   // Header
   header: {
     flexDirection: 'row',
@@ -310,21 +327,28 @@ const styles = StyleSheet.create({
   logoTextContainer: { marginLeft: 8 },
   logoTitle: { fontSize: 16, fontWeight: 'bold', color: COLORS.darkBlue },
   logoSubtitle: { fontSize: 8, color: COLORS.textMuted, letterSpacing: 1 },
-  themeToggle: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFF', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 20, borderWidth: 1, borderColor: COLORS.border },
+  themeToggle: {
+    flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFF',
+    paddingHorizontal: 10, paddingVertical: 6, borderRadius: 20,
+    borderWidth: 1, borderColor: COLORS.border,
+  },
   themeText: { fontSize: 10, color: COLORS.textMuted, marginLeft: 4 },
 
   // Main Content
   mainContent: { flex: 1, justifyContent: 'center' },
-  
+
   // Welcome Section
   welcomeSection: { marginBottom: 32 },
   tag: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
   tagDot: { color: COLORS.primary, fontSize: 10, marginRight: 6 },
   tagText: { fontSize: 10, fontWeight: 'bold', color: COLORS.primary, letterSpacing: 1 },
-  welcomeTitle: { fontSize: 28, fontWeight: 'bold', color: COLORS.darkBlue, fontFamily: 'serif', marginBottom: 12, lineHeight: 34 },
+  welcomeTitle: {
+    fontSize: 28, fontWeight: 'bold', color: COLORS.darkBlue,
+    fontFamily: 'serif', marginBottom: 12, lineHeight: 34,
+  },
   welcomeSubtitle: { fontSize: 13, color: COLORS.textMuted, lineHeight: 20, marginBottom: 16 },
-  securityNote: { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
-  securityText: { fontSize: 11, color: COLORS.textMuted, flex: 1, lineHeight: 16 },
+  securityNote: { flexDirection: 'row', alignItems: 'flex-start' },
+  securityText: { fontSize: 11, color: COLORS.textMuted, flex: 1, lineHeight: 16, marginLeft: 8 },
 
   // Login Card
   card: {
@@ -342,32 +366,56 @@ const styles = StyleSheet.create({
   cardSubtitle: { fontSize: 13, color: COLORS.textMuted, marginBottom: 20 },
 
   // Toggle
-  toggleContainer: { flexDirection: 'row', backgroundColor: COLORS.toggleBg, borderRadius: 8, padding: 4, marginBottom: 20 },
-  toggleButton: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 8, borderRadius: 6, gap: 6 },
-  toggleButtonActive: { backgroundColor: '#FFF', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 2, elevation: 2 },
-  toggleText: { fontSize: 12, fontWeight: '600', color: COLORS.textMuted },
+  toggleContainer: {
+    flexDirection: 'row', backgroundColor: COLORS.toggleBg,
+    borderRadius: 8, padding: 4, marginBottom: 20,
+  },
+  toggleButton: {
+    flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    paddingVertical: 8, borderRadius: 6,
+  },
+  toggleButtonActive: {
+    backgroundColor: '#FFF',
+    shadowColor: '#000', shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1, shadowRadius: 2, elevation: 2,
+  },
+  toggleText: { fontSize: 12, fontWeight: '600', color: COLORS.textMuted, marginLeft: 6 },
   toggleTextActive: { color: COLORS.primary },
 
   // Inputs
   inputGroup: { marginBottom: 16 },
   label: { fontSize: 12, fontWeight: 'bold', color: COLORS.textMain, marginBottom: 6 },
-  required: { color: '#EF4444' },
-  inputWrapper: { flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.inputBg, borderWidth: 1, borderColor: COLORS.border, borderRadius: 8, paddingHorizontal: 12 },
+  required: { color: COLORS.danger },
+  inputWrapper: {
+    flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.inputBg,
+    borderWidth: 1, borderColor: COLORS.border, borderRadius: 8, paddingHorizontal: 12,
+  },
   inputIcon: { marginRight: 8 },
   input: { flex: 1, paddingVertical: 12, fontSize: 14, color: COLORS.textMain },
   eyeIcon: { padding: 4 },
 
   // Options
-  optionsRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 },
+  optionsRow: {
+    flexDirection: 'row', justifyContent: 'space-between',
+    alignItems: 'center', marginBottom: 24,
+  },
   checkboxContainer: { flexDirection: 'row', alignItems: 'center' },
-  checkbox: { width: 16, height: 16, borderRadius: 4, borderWidth: 1, borderColor: COLORS.textMuted, justifyContent: 'center', alignItems: 'center', marginRight: 8 },
+  checkbox: {
+    width: 16, height: 16, borderRadius: 4, borderWidth: 1,
+    borderColor: COLORS.textMuted, justifyContent: 'center',
+    alignItems: 'center', marginRight: 8,
+  },
   checkboxChecked: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
   checkboxText: { fontSize: 12, color: COLORS.textMuted },
   forgotPassword: { fontSize: 12, color: COLORS.primary, fontWeight: '600' },
 
   // Button
-  primaryButton: { backgroundColor: COLORS.primary, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', paddingVertical: 14, borderRadius: 8, gap: 8, marginBottom: 20 },
-  primaryButtonText: { color: '#FFF', fontSize: 14, fontWeight: 'bold' },
+  primaryButton: {
+    backgroundColor: COLORS.primary, flexDirection: 'row',
+    justifyContent: 'center', alignItems: 'center',
+    paddingVertical: 14, borderRadius: 8, marginBottom: 20,
+  },
+  primaryButtonText: { color: '#FFF', fontSize: 14, fontWeight: 'bold', marginRight: 8 },
 
   // Card Footer
   cardFooter: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center' },
@@ -375,7 +423,10 @@ const styles = StyleSheet.create({
   registerLink: { fontSize: 12, color: COLORS.primary, fontWeight: 'bold' },
 
   // Page Footer
-  pageFooter: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginTop: 32, flexWrap: 'wrap' },
+  pageFooter: {
+    flexDirection: 'row', justifyContent: 'center',
+    alignItems: 'center', marginTop: 32, flexWrap: 'wrap',
+  },
   footerText: { fontSize: 11, color: COLORS.textMuted },
   footerLink: { fontSize: 11, color: COLORS.primary, fontWeight: '600' },
 
@@ -411,19 +462,14 @@ const styles = StyleSheet.create({
     color: COLORS.textMain,
     flex: 1,
   },
-  closeButton: {
-    padding: 4,
-    marginLeft: 8,
-  },
+  closeButton: { padding: 4, marginLeft: 8 },
   modalDescription: {
     fontSize: 13,
     color: COLORS.textMuted,
     lineHeight: 20,
     marginBottom: 20,
   },
-  modalInputGroup: {
-    marginBottom: 16,
-  },
+  modalInputGroup: { marginBottom: 16 },
   modalLabel: {
     fontSize: 12,
     fontWeight: 'bold',
@@ -452,12 +498,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 14,
     borderRadius: 8,
-    gap: 8,
     marginTop: 8,
   },
   modalSubmitText: {
     color: COLORS.resetBtnText,
     fontSize: 14,
     fontWeight: 'bold',
+    marginRight: 8,
   },
 });
