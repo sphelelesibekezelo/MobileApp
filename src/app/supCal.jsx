@@ -1,1202 +1,431 @@
-// src/app/supervisorDash.jsx
-import { Ionicons } from '@expo/vector-icons';
-import { Picker } from '@react-native-picker/picker';
-import { useRouter } from 'expo-router';
+import { Feather } from '@expo/vector-icons';
 import { useState } from 'react';
 import {
-  Image,
-  KeyboardAvoidingView,
-  Modal,
-  Platform,
+  Dimensions,
+  ImageBackground,
+  SafeAreaView,
   ScrollView,
+  StatusBar,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 
-import logoImg from "@/assets/images/logo.png";
-import { calendarData } from '../data/mockData';
-
-const assistants = calendarData.assistants;
-const initialShiftRecords = calendarData.initialShiftRecords;
-
-// =====================================================
-// ✅ DYNAMIC SOUTH AFRICAN HOLIDAYS FOR ANY YEAR
-// =====================================================
-
-// Calculate Easter Sunday for a given year (Anonymous Gregorian algorithm)
-const getEasterSunday = (year) => {
-  const a = year % 19;
-  const b = Math.floor(year / 100);
-  const c = year % 100;
-  const d = Math.floor(b / 4);
-  const e = b % 4;
-  const f = Math.floor((b + 8) / 25);
-  const g = Math.floor((b - f + 1) / 3);
-  const h = Math.floor((19 * a + b - d - g + 15) % 30);
-  const i = Math.floor(c / 4);
-  const k = c % 4;
-  const l = Math.floor((32 + 2 * e + 2 * i - h - k) % 7);
-  const m = Math.floor((a + 11 * h + 22 * l) / 451);
-  const month = Math.floor((h + l - 7 * m + 114) / 31);
-  const day = ((h + l - 7 * m + 114) % 31) + 1;
-  return new Date(year, month - 1, day);
+// --- Theme Colors ---
+const COLORS = {
+  primary: '#2563EB',
+  darkBlue: '#1E3A8A',
+  textMain: '#111827',
+  textMuted: '#6B7280',
+  bg: '#F8FAFC',
+  card: '#FFFFFF',
+  border: '#E5E7EB',
+  success: '#10B981',
+  danger: '#EF4444',
+  purpleLight: '#E0E7FF',
+  purpleText: '#4F46E5',
+  grayLight: '#F3F4F6',
+  grayText: '#4B5563',
 };
 
-// Build the full list of South African public holidays for a given year
-const getHolidaysForYear = (year) => {
-  const pad = (n) => String(n).padStart(2, '0');
-  const key = (m, d) => `${year}-${pad(m)}-${pad(d)}`;
+const SCREEN_WIDTH = Dimensions.get('window').width;
 
-  const holidays = {};
+// --- Mock Data for Calendar ---
+const weekDays = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+const calendarDays = [
+  { day: '27', current: false }, { day: '28', current: false }, { day: '29', current: false },
+  { day: '30', current: false }, { day: '1', current: true }, { day: '2', current: true },
+  { day: '3', current: true }, { day: '4', current: true }, { day: '5', current: true },
+  { day: '6', current: true, selected: true }, { day: '7', current: true },
+  { day: '8', current: true }, { day: '9', current: true }, { day: '10', current: true },
+  { day: '11', current: true }, { day: '12', current: true }, { day: '13', current: true },
+  { day: '14', current: true }, { day: '15', current: true }, { day: '16', current: true },
+  { day: '17', current: true }, { day: '18', current: true }, { day: '19', current: true },
+  { day: '20', current: true }, { day: '21', current: true }, { day: '22', current: true },
+  { day: '23', current: true }, { day: '24', current: true }, { day: '25', current: true },
+  { day: '26', current: true }, { day: '27', current: true }, { day: '28', current: true },
+  { day: '29', current: true }, { day: '30', current: true }, { day: '31', current: true },
+];
 
-  // Fixed-date holidays
-  const fixedDates = [
-    [1, 1, "New Year's Day"],
-    [3, 21, 'Human Rights Day'],
-    [4, 27, 'Freedom Day'],
-    [5, 1, "Workers' Day"],
-    [6, 16, 'Youth Day'],
-    [8, 9, "National Women's Day"],
-    [9, 24, 'Heritage Day'],
-    [12, 16, 'Day of Reconciliation'],
-    [12, 25, 'Christmas Day'],
-    [12, 26, 'Day of Goodwill'],
-  ];
-
-  // Add fixed-date holidays
-  fixedDates.forEach(([m, d, name]) => {
-    holidays[key(m, d)] = name;
-  });
-
-  // Easter-based holidays (Good Friday, Family Day)
-  const easter = getEasterSunday(year);
-  const goodFriday = new Date(easter);
-  goodFriday.setDate(easter.getDate() - 2);
-  const familyDay = new Date(easter);
-  familyDay.setDate(easter.getDate() + 1);
-
-  holidays[key(goodFriday.getMonth() + 1, goodFriday.getDate())] = 'Good Friday';
-  holidays[key(familyDay.getMonth() + 1, familyDay.getDate())] = 'Family Day';
-
-  // Observed Monday rule: if a fixed holiday falls on Sunday, the following Monday is a holiday
-  fixedDates.forEach(([m, d, name]) => {
-    const date = new Date(year, m - 1, d);
-    if (date.getDay() === 0) {
-      const monday = new Date(year, m - 1, d + 1);
-      holidays[key(monday.getMonth() + 1, monday.getDate())] = `${name} (Observed)`;
-    }
-  });
-
-  return holidays;
-};
-
-const formatDate = (date) => {
-  if (!date) return '';
-  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-  const day = String(date.getDate()).padStart(2, '0');
-  const month = months[date.getMonth()];
-  const year = date.getFullYear();
-  return `${month} ${day}, ${year}`;
-};
-
-const MONTH_NAMES = calendarData.monthNames;
-
-// The current date — drives the Details Card
-const TODAY = calendarData.today;
-
-// =====================================================
-// CUSTOM DATE PICKER COMPONENT
-// =====================================================
-const CustomDatePicker = ({ visible, onClose, onSelect, initialDate }) => {
-  const [viewDate, setViewDate] = useState(initialDate || new Date());
-
-  const year = viewDate.getFullYear();
-  const month = viewDate.getMonth();
-
-  const getDaysInMonth = (y, m) => new Date(y, m + 1, 0).getDate();
-  const getFirstDayOfMonth = (y, m) => new Date(y, m, 1).getDay();
-
-  const daysInMonth = getDaysInMonth(year, month);
-  const firstDay = getFirstDayOfMonth(year, month);
-
-  const calendarDays = [];
-  for (let i = 0; i < firstDay; i++) calendarDays.push('');
-  for (let i = 1; i <= daysInMonth; i++) calendarDays.push(i);
-
-  const handlePrevMonth = () => setViewDate(new Date(year, month - 1, 1));
-  const handleNextMonth = () => setViewDate(new Date(year, month + 1, 1));
-
-  const handleSelectDay = (day) => {
-    if (day === '') return;
-    const selected = new Date(year, month, day);
-    onSelect(selected);
-    onClose();
-  };
-
-  const isSelected = (day) => {
-    if (!initialDate || day === '') return false;
-    return (
-      day === initialDate.getDate() &&
-      month === initialDate.getMonth() &&
-      year === initialDate.getFullYear()
-    );
-  };
+export default function MasterSchedule() {
+  const [activeTab, setActiveTab] = useState('Calendar');
 
   return (
-    <Modal animationType="fade" transparent={true} visible={visible} onRequestClose={onClose}>
-      <TouchableOpacity style={styles.datePickerOverlay} activeOpacity={1} onPress={onClose}>
-        <TouchableOpacity style={styles.datePickerContent} activeOpacity={1} onPress={(e) => e.stopPropagation()}>
-          <View style={styles.datePickerHeader}>
-            <Text style={styles.datePickerTitle}>Select Date</Text>
-            <TouchableOpacity onPress={onClose}>
-              <Ionicons name="close-circle" size={26} color="#A0AEC0" />
+    <SafeAreaView style={styles.container}>
+      <StatusBar barStyle="dark-content" />
+      
+      {/* Background Image with 70% White Overlay */}
+      <ImageBackground 
+        source={{ uri: 'https://images.unsplash.com/photo-1507842217343-583bb7270b66?q=80&w=1590&auto=format&fit=crop' }} 
+        style={styles.backgroundImage}
+        resizeMode="cover"
+      >
+        <View style={styles.overlay} />
+
+        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+          
+          {/* --- HEADER --- */}
+          <View style={styles.header}>
+            <TouchableOpacity style={styles.themeToggle}>
+              <Feather name="moon" size={16} color={COLORS.textMuted} />
+              <Text style={styles.themeText}>
+                Change mode <Text style={{ color: '#F59E0B' }}>Dark</Text>
+              </Text>
             </TouchableOpacity>
-          </View>
 
-          <View style={styles.datePickerNav}>
-            <TouchableOpacity style={styles.datePickerNavBtn} onPress={handlePrevMonth}>
-              <Ionicons name="chevron-back" size={18} color="#1E3A8A" />
-            </TouchableOpacity>
-            <Text style={styles.datePickerMonthText}>{MONTH_NAMES[month]} {year}</Text>
-            <TouchableOpacity style={styles.datePickerNavBtn} onPress={handleNextMonth}>
-              <Ionicons name="chevron-forward" size={18} color="#1E3A8A" />
-            </TouchableOpacity>
-          </View>
-
-          <View style={styles.datePickerDaysRow}>
-            {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, i) => (
-              <Text key={i} style={styles.datePickerDayLabel}>{d}</Text>
-            ))}
-          </View>
-
-          <View style={styles.datePickerGrid}>
-            {calendarDays.map((day, index) => (
-              <TouchableOpacity key={index} style={styles.datePickerCell} onPress={() => handleSelectDay(day)} disabled={day === ''}>
-                {day !== '' && (
-                  <View style={[styles.datePickerDateCircle, isSelected(day) && styles.datePickerSelectedCircle]}>
-                    <Text style={[styles.datePickerDateText, isSelected(day) && styles.datePickerSelectedText]}>{day}</Text>
-                  </View>
-                )}
-              </TouchableOpacity>
-            ))}
-          </View>
-
-          <TouchableOpacity style={styles.datePickerCancelBtn} onPress={onClose}>
-            <Text style={styles.datePickerCancelText}>Cancel</Text>
-          </TouchableOpacity>
-        </TouchableOpacity>
-      </TouchableOpacity>
-    </Modal>
-  );
-};
-
-const AssistantCard = ({ item }) => (
-  <View style={styles.assistantCard}>
-    <View style={[styles.avatar, { backgroundColor: item.color }]}>
-      <Text style={styles.avatarText}>{item.initials}</Text>
-    </View>
-    <View style={styles.assistantInfo}>
-      <Text style={styles.assistantName}>{item.name}</Text>
-      <Text style={styles.assistantRole}>{item.role}</Text>
-    </View>
-    <View style={[styles.statusBadge, item.status === 'PENDING' && styles.statusBadgePending]}>
-      <Text style={[styles.statusText, item.status === 'PENDING' && styles.statusTextPending]}>{item.status}</Text>
-    </View>
-  </View>
-);
-
-export default function SupervisorDashboard() {
-  const router = useRouter();
-
-  const [currentDate, setCurrentDate] = useState(new Date(2026, 7, 9));
-
-  const [shiftRecords, setShiftRecords] = useState(initialShiftRecords);
-  const [events, setEvents] = useState({});
-
-  // Add Event Modal
-  const [isEventModalVisible, setIsEventModalVisible] = useState(false);
-  const [eventDate, setEventDate] = useState(null);
-  const [showEventDatePicker, setShowEventDatePicker] = useState(false);
-  const [eventType, setEventType] = useState('Strike');
-  // ✅ Removed eventTime state
-
-  // Assign Shift Modal
-  const [isAssignModalVisible, setIsAssignModalVisible] = useState(false);
-  const [selectedAssistant, setSelectedAssistant] = useState(assistants[0]?.name || '');
-  const [selectedPosition, setSelectedPosition] = useState('Icenter');
-  const [shiftTime, setShiftTime] = useState('');
-  const [shiftDuration, setShiftDuration] = useState('');
-
-  // Day Details Modal
-  const [isDayModalVisible, setIsDayModalVisible] = useState(false);
-  const [selectedDay, setSelectedDay] = useState(null);
-
-  const monthNames = MONTH_NAMES;
-  const year = currentDate.getFullYear();
-  const month = currentDate.getMonth();
-
-  // ✅ Compute holidays for the currently displayed year
-  const holidaysForYear = getHolidaysForYear(year);
-
-  const getDaysInMonth = (y, m) => new Date(y, m + 1, 0).getDate();
-  const getFirstDayOfMonth = (y, m) => new Date(y, m, 1).getDay();
-
-  const daysInMonth = getDaysInMonth(year, month);
-  const firstDay = getFirstDayOfMonth(year, month);
-
-  const calendarDays = [];
-  for (let i = 0; i < firstDay; i++) calendarDays.push('');
-  for (let i = 1; i <= daysInMonth; i++) calendarDays.push(i);
-
-  const handlePrevMonth = () => setCurrentDate(new Date(year, month - 1, 1));
-  const handleNextMonth = () => setCurrentDate(new Date(year, month + 1, 1));
-
-  const isToday = (day) => {
-    return day === TODAY.getDate() && month === TODAY.getMonth() && year === TODAY.getFullYear();
-  };
-
-  const getDateKey = (day, m = month, y = year) => {
-    const dayStr = String(day).padStart(2, '0');
-    const monthStr = String(m + 1).padStart(2, '0');
-    return `${y}-${monthStr}-${dayStr}`;
-  };
-
-  // Blocks both Sundays and holidays
-  const handleDayPress = (day, isSunday, isHoliday) => {
-    if (day === '' || isSunday || isHoliday) return;
-    const dateKey = getDateKey(day);
-
-    setSelectedDay({
-      day: day,
-      month: monthNames[month],
-      year: year,
-      dateKey: dateKey,
-      shifts: shiftRecords[dateKey] || [],
-      events: events[dateKey] || [],
-    });
-    setIsDayModalVisible(true);
-  };
-
-  const handleEventDateSelect = (date) => setEventDate(date);
-
-  const handleAddEvent = () => {
-    // ✅ Removed eventTime validation
-    if (!eventDate) {
-      alert("Please fill in the date of the event.");
-      return;
-    }
-
-    const m = eventDate.getMonth();
-    const y = eventDate.getFullYear();
-    const dateKey = getDateKey(eventDate.getDate(), m, y);
-
-    const newEvent = {
-      id: Date.now(),
-      type: eventType,
-      // ✅ Removed time: eventTime,
-    };
-
-    setEvents(prev => ({
-      ...prev,
-      [dateKey]: [...(prev[dateKey] || []), newEvent]
-    }));
-
-    // ✅ Updated alert to remove time
-    alert(`Event Added!\nDate: ${formatDate(eventDate)}\nType: ${eventType}`);
-
-    setEventDate(null);
-    setEventType('Strike');
-    // ✅ Removed setEventTime('');
-    setIsEventModalVisible(false);
-  };
-
-  const handleAssignShift = () => {
-    // ✅ Removed the date validation since we automatically use the selectedDay's date
-    if (!shiftTime || !shiftDuration) {
-      alert("Please fill in the time and duration.");
-      return;
-    }
-
-    if (!selectedDay) {
-      alert("No day selected. Please click a day on the calendar first.");
-      return;
-    }
-
-    // ✅ Automatically use the date from the day that was clicked
-    const dateKey = selectedDay.dateKey;
-
-    const selectedAsst = assistants.find(a => a.name === selectedAssistant) || assistants[0];
-
-    const newShift = {
-      id: Date.now(),
-      assistant: selectedAssistant,
-      initials: selectedAsst.initials,
-      position: selectedPosition,
-      time: shiftTime,
-      hours: `${shiftDuration}h`,
-      color: selectedAsst.color,
-    };
-
-    setShiftRecords(prev => ({
-      ...prev,
-      [dateKey]: [...(prev[dateKey] || []), newShift]
-    }));
-
-    alert(`Shift Assigned!\nAssistant: ${selectedAssistant}\nPosition: ${selectedPosition}\nDate: ${selectedDay.month} ${selectedDay.day}, ${selectedDay.year}\nTime: ${shiftTime}\nDuration: ${shiftDuration} hours`);
-
-    // Reset form
-    setSelectedPosition('Icenter');
-    setShiftTime('');
-    setShiftDuration('');
-    setIsAssignModalVisible(false);
-
-    // ✅ Also update the selectedDay state so the details modal reflects the new shift if reopened
-    setSelectedDay(prev => ({
-      ...prev,
-      shifts: [...(prev.shifts || []), newShift]
-    }));
-  };
-
-  const getTotalHours = () => {
-    if (!selectedDay || !selectedDay.shifts) return 0;
-    return selectedDay.shifts.reduce((total, shift) => {
-      const hours = parseFloat(shift.hours.replace('h', ''));
-      return total + hours;
-    }, 0);
-  };
-
-  const hasClosingEvent = selectedDay && selectedDay.events && selectedDay.events.some(
-    event => event.type === 'Strike' || event.type === 'Library Closure'
-  );
-
-  // =====================================================
-  // TODAY's summary (for the Details Card)
-  // =====================================================
-  const todayDateKey = getDateKey(TODAY.getDate(), TODAY.getMonth(), TODAY.getFullYear());
-
-  const todayShifts = shiftRecords[todayDateKey] || [];
-  const todayEvents = events[todayDateKey] || [];
-  const todayTotalHours = todayShifts.reduce((sum, s) => {
-    return sum + parseFloat(s.hours.replace('h', ''));
-  }, 0);
-
-  // ✅ Holiday check for today (dynamic, using TODAY's year)
-  const todayHolidaysMap = getHolidaysForYear(TODAY.getFullYear());
-  const todayHoliday = todayHolidaysMap[todayDateKey] || null;
-
-  const todayDateLabel = `${monthNames[TODAY.getMonth()]} ${TODAY.getDate()} Details`;
-  const todaySubtitle =
-    todayShifts.length > 0
-      ? `${todayShifts.length} shift${todayShifts.length > 1 ? 's' : ''} · ${todayTotalHours}h total`
-      : 'No shifts scheduled for today';
-
-  return (
-    <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
-
-      {/* Top Header */}
-      <View style={styles.header}>
-        <View style={styles.headerLeft}>
-          <Image source={logoImg} style={styles.iconContainer} resizeMode="contain" />
-          <View style={styles.headerTextContainer}>
-            <Text style={styles.headerTitle}>StudentAssistance</Text>
-            <Text style={styles.headerSubtitle}>ABSENCE TRACKER</Text>
-          </View>
-        </View>
-        <View style={styles.headerRight}>
-          <TouchableOpacity style={styles.iconButton} onPress={() => router.push('/supNotification')}>
-            <Ionicons name="notifications-outline" size={22} color="#1E3A8A" />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.iconButton} onPress={() => router.push('/logOut')}>
-            <Ionicons name="log-out-outline" size={22} color="#1E3A8A" />
-          </TouchableOpacity>
-        </View>
-      </View>
-
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-
-        <View style={styles.portalHeader}>
-          <Ionicons name="desktop-outline" size={16} color="#1E3A8A" style={styles.portalIcon} />
-          <Text style={styles.portalTitle}>SUPERVISOR PORTAL</Text>
-        </View>
-        <Text style={styles.pageTitle}>{monthNames[month]} Schedule</Text>
-        <Text style={styles.pageSubtitle}>
-          Manage student shifts and academic closures for the current term.
-        </Text>
-
-        {/* CALENDAR CARD */}
-        <View style={styles.calendarCard}>
-          <View style={styles.calendarHeader}>
-            <View>
-              <Text style={styles.calendarMonth}>{monthNames[month]} {year}</Text>
-              <Text style={styles.calendarSubtext}>12 ACTIVE SHIFTS</Text>
-            </View>
-
-            <View style={styles.calendarNav}>
-              <TouchableOpacity style={styles.navArrow} onPress={handlePrevMonth}>
-                <Ionicons name="chevron-back" size={16} color="#1E3A8A" />
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.navArrow} onPress={handleNextMonth}>
-                <Ionicons name="chevron-forward" size={16} color="#1E3A8A" />
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.addEventButtonSmall}
-                onPress={() => setIsEventModalVisible(true)}
-              >
-                <Ionicons name="add-outline" size={16} color="#FFFFFF" />
-              </TouchableOpacity>
+            <View style={styles.userProfile}>
+              <View style={styles.userInfo}>
+                <Text style={styles.userName}>Sbongile Monta</Text>
+                <Text style={styles.userRole}>Supervisor</Text>
+              </View>
+              <View style={styles.avatar}>
+                <Text style={styles.avatarText}>SM</Text>
+              </View>
             </View>
           </View>
 
-          <View style={styles.daysRow}>
-            {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map((day, index) => (
-              <Text key={index} style={styles.dayLabel}>{day}</Text>
-            ))}
-          </View>
-
-          <View style={styles.calendarGrid}>
-            {calendarDays.map((day, index) => {
-              const dateKey = day !== '' ? getDateKey(day) : null;
-              const isSunday = index % 7 === 0;
-              // ✅ Using dynamic holidays for the currently displayed year
-              const isHoliday = dateKey && !!holidaysForYear[dateKey];
-              const hasShift = !isSunday && !isHoliday && dateKey && shiftRecords[dateKey] && shiftRecords[dateKey].length > 0;
-              const dayEvents = dateKey && events[dateKey] ? events[dateKey] : [];
-              const hasEvent = !isSunday && !isHoliday && dayEvents.length > 0;
-              const isDisabled = day === '' || isSunday || isHoliday;
-
-              return (
-                <TouchableOpacity
-                  key={index}
-                  style={styles.calendarCell}
-                  onPress={() => handleDayPress(day, isSunday, isHoliday)}
-                  disabled={isDisabled}
-                  activeOpacity={0.7}
-                >
-                  {day !== '' && (
-                    <View
-                      style={[
-                        styles.dateCircle,
-                        isHoliday && styles.holidayDate,
-                        isToday(day) && styles.activeDate,
-                        isSunday && !isToday(day) && !isHoliday && styles.sundayDate,
-                      ]}
-                    >
-                      <Text
-                        style={[
-                          styles.dateText,
-                          isHoliday && styles.holidayDateText,
-                          isToday(day) && styles.activeDateText,
-                          isSunday && !isToday(day) && !isHoliday && styles.sundayDateText,
-                        ]}
-                      >
-                        {day}
-                      </Text>
-                    </View>
-                  )}
-
-                  {day !== '' && (hasShift || hasEvent || isHoliday) && (
-                    <View style={styles.dotContainer}>
-                      {hasShift && <View style={[styles.dot, { backgroundColor: '#2563EB' }]} />}
-                      {dayEvents.map(e => (
-                        <View
-                          key={e.id}
-                          style={[
-                            styles.dot,
-                            { backgroundColor: e.type === 'Strike' ? '#1A202C' : '#DC2626' },
-                          ]}
-                        />
-                      ))}
-                      {isHoliday && <View style={[styles.dot, { backgroundColor: '#9333EA' }]} />}
-                    </View>
-                  )}
-
-                  {isToday(day) && !isHoliday && <Text style={styles.todayLabel}>TODAY</Text>}
-                  {isHoliday && <Text style={styles.holidayLabel}>HOLIDAY</Text>}
+          {/* --- TITLE & ACTIONS --- */}
+          <View style={styles.titleSection}>
+            <View style={styles.titleRow}>
+              <Text style={styles.pageTitle}>Master Schedule</Text>
+              <View style={styles.actionButtons}>
+                <TouchableOpacity style={styles.refreshButton}>
+                  <Feather name="refresh-cw" size={14} color={COLORS.textMain} />
                 </TouchableOpacity>
-              );
-            })}
-          </View>
-
-          <View style={styles.legendRow}>
-            <View style={styles.legendItem}>
-              <View style={[styles.legendDot, { backgroundColor: '#DC2626' }]} />
-              <Text style={styles.legendText}>Library</Text>
-            </View>
-            <View style={styles.legendItem}>
-              <View style={[styles.legendDot, { backgroundColor: '#1A202C' }]} />
-              <Text style={styles.legendText}>Strike</Text>
-            </View>
-            <View style={styles.legendItem}>
-              <View style={[styles.legendDot, { backgroundColor: '#2563EB' }]} />
-              <Text style={styles.legendText}>Shift</Text>
-            </View>
-            <View style={styles.legendItem}>
-              <View style={[styles.legendDot, { backgroundColor: '#9333EA' }]} />
-              <Text style={styles.legendText}>Holiday</Text>
-            </View>
-          </View>
-        </View>
-
-        <View style={styles.sectionHeader}>
-          <View style={styles.sectionTitleContainer}>
-            <Ionicons name="people-outline" size={18} color="#1E3A8A" style={styles.sectionIcon} />
-            <Text style={styles.sectionTitle}>Student Assistant Assignments</Text>
-          </View>
-          <View style={styles.assignedBadge}>
-            <Text style={styles.assignedBadgeText}>3 Assigned</Text>
-          </View>
-        </View>
-
-        {assistants.map((item) => (
-          <AssistantCard key={item.id} item={item} />
-        ))}
-
-        <View style={styles.scheduledCard}>
-          <View style={styles.scheduledIconContainer}>
-            <Ionicons name="time-outline" size={20} color="#1E3A8A" />
-          </View>
-          <Text style={styles.scheduledText}>TOTAL SCHEDULED TODAY</Text>
-          <Text style={styles.scheduledValue}>{todayTotalHours}h</Text>
-        </View>
-
-        {/* DETAILS CARD — Today's summary + Holiday info */}
-        <View style={styles.detailsCard}>
-          <View style={styles.detailsHeader}>
-            <View style={styles.detailsIconContainer}>
-              <Ionicons name="calendar" size={20} color="#FFFFFF" />
-            </View>
-            <View style={styles.eventBadge}>
-              <Text style={styles.eventBadgeText}>
-                {todayHoliday
-                  ? 'Holiday'
-                  : todayEvents.length > 0
-                    ? `${todayEvents.length} Event${todayEvents.length > 1 ? 's' : ''}`
-                    : 'Today'}
-              </Text>
-            </View>
-          </View>
-
-          <Text style={styles.detailsTitle}>{todayDateLabel}</Text>
-
-          {todayHoliday && (
-            <View style={styles.holidayBanner}>
-              <Ionicons name="sparkles-outline" size={16} color="#FFFFFF" />
-              <View style={{ flex: 1 }}>
-                <Text style={styles.holidayBannerLabel}>PUBLIC HOLIDAY</Text>
-                <Text style={styles.holidayBannerName}>{todayHoliday}</Text>
+                <TouchableOpacity style={styles.newShiftButton}>
+                  <Feather name="plus" size={14} color="#FFF" />
+                  <Text style={styles.newShiftText}>New Shift</Text>
+                </TouchableOpacity>
               </View>
             </View>
-          )}
-
-          <Text style={styles.detailsSubtitle}>{todaySubtitle}</Text>
-
-          <View style={styles.summaryRow}>
-            <View style={styles.summaryItem}>
-              <Ionicons name="time-outline" size={16} color="#A0C1DD" />
-              <Text style={styles.summaryLabel}>Total Hours</Text>
-              <Text style={styles.summaryValue}>{todayTotalHours}h</Text>
-            </View>
-
-            <View style={styles.summaryItem}>
-              <Ionicons name="people-outline" size={16} color="#A0C1DD" />
-              <Text style={styles.summaryLabel}>Shifts</Text>
-              <Text style={styles.summaryValue}>{todayShifts.length}</Text>
-            </View>
-
-            <View style={styles.summaryItem}>
-              <Ionicons name="alert-circle-outline" size={16} color="#A0C1DD" />
-              <Text style={styles.summaryLabel}>Events</Text>
-              <Text style={styles.summaryValue}>{todayEvents.length}</Text>
-            </View>
-          </View>
-
-          {todayShifts.length > 0 ? (
-            <View style={styles.detailsList}>
-              <Text style={styles.detailsListTitle}>ON DUTY TODAY</Text>
-              {todayShifts.map((shift) => (
-                <View key={shift.id} style={styles.detailsListItem}>
-                  <View style={[styles.detailsAvatar, { backgroundColor: shift.color }]}>
-                    <Text style={styles.detailsAvatarText}>{shift.initials}</Text>
-                  </View>
-                  <Text style={styles.detailsListName}>{shift.assistant}</Text>
-                  <Text style={styles.detailsListTime}>{shift.time}</Text>
-                </View>
-              ))}
-            </View>
-          ) : (
-            <Text style={styles.detailsEmpty}>
-              {todayHoliday
-                ? 'No shifts scheduled — campus closed for the holiday.'
-                : 'No shifts scheduled for today.'}
+            <Text style={styles.pageSubtitle}>
+              Manage every student assistant's shifts from a single monthly view. Each student has a unique color.
             </Text>
-          )}
-        </View>
-
-      </ScrollView>
-
-      {/* BOTTOM NAVIGATION */}
-      <View style={styles.bottomNav}>
-        <TouchableOpacity style={styles.navItem} onPress={() => router.push('/supervisorDash')}>
-          <Ionicons name="grid-outline" size={24} color="#6B7280" />
-          <Text style={styles.navText}>Home</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.navItem} onPress={() => router.push('/supRequest')}>
-          <View style={styles.navIconContainer}>
-            <Ionicons name="document-text-outline" size={24} color="#6B7280" />
-            <View style={styles.navBadge}>
-              <Text style={styles.navBadgeText}>1</Text>
-            </View>
           </View>
-          <Text style={styles.navText}>Requests</Text>
-        </TouchableOpacity>
 
-        <TouchableOpacity style={styles.navItem}>
-          <Ionicons name="calendar-outline" size={24} color="#6B7280" />
-          <Text style={styles.navText}>Calendar</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.navItem} onPress={() => router.push('/supReport')}>
-          <Ionicons name="bar-chart-outline" size={24} color="#6B7280" />
-          <Text style={styles.navText}>Reports</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* DAY DETAILS MODAL */}
-      <Modal
-        animationType="slide"
-        transparent={true}
-        visible={isDayModalVisible}
-        onRequestClose={() => setIsDayModalVisible(false)}
-      >
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          style={styles.modalOverlay}
-        >
-          <View style={styles.dayModalContent}>
-            <View style={styles.modalHeader}>
+          {/* --- STATS ROW --- */}
+          <View style={styles.statsRow}>
+            <View style={styles.statCard}>
+              <View style={[styles.statIndicator, { backgroundColor: COLORS.primary }]} />
               <View>
-                <Text style={styles.modalTitle}>
-                  {selectedDay ? `${selectedDay.month} ${selectedDay.day}, ${selectedDay.year}` : ''}
-                </Text>
-                <Text style={styles.modalSubtitle}>
-                  {selectedDay && (selectedDay.shifts.length > 0 || selectedDay.events.length > 0)
-                    ? `${selectedDay.shifts.length} shift(s) & ${selectedDay.events.length} event(s)`
-                    : 'Nothing scheduled'}
-                </Text>
-              </View>
-              <TouchableOpacity onPress={() => setIsDayModalVisible(false)}>
-                <Ionicons name="close-circle" size={28} color="#A0AEC0" />
-              </TouchableOpacity>
-            </View>
-
-            <View style={styles.totalHoursCard}>
-              <View style={styles.totalHoursIconContainer}>
-                <Ionicons name="time-outline" size={20} color="#1E3A8A" />
-              </View>
-              <View style={styles.totalHoursTextContainer}>
-                <Text style={styles.totalHoursLabel}>TOTAL WORKING HOURS</Text>
-                <Text style={styles.totalHoursValue}>{getTotalHours()}h</Text>
+                <Text style={styles.statLabel}>TOTAL SHIFTS</Text>
+                <Text style={styles.statValue}>6</Text>
               </View>
             </View>
+            <View style={styles.statCard}>
+              <View style={[styles.statIndicator, { backgroundColor: COLORS.success }]} />
+              <View>
+                <Text style={styles.statLabel}>ACTIVE ASSISTANTS</Text>
+                <Text style={styles.statValue}>3</Text>
+              </View>
+            </View>
+            <View style={styles.statCard}>
+              <View style={[styles.statIndicator, { backgroundColor: '#F59E0B' }]} />
+              <View>
+                <Text style={styles.statLabel}>UPCOMING</Text>
+                <Text style={styles.statValue}>2</Text>
+              </View>
+            </View>
+          </View>
 
-            <ScrollView style={styles.shiftsList} showsVerticalScrollIndicator={false}>
-
-              {selectedDay && selectedDay.events.length > 0 && (
-                <View style={styles.sectionContainer}>
-                  <Text style={styles.sectionHeaderTitle}>EVENTS</Text>
-                  {selectedDay.events.map((event) => (
-                    <View key={event.id} style={styles.eventCard}>
-                      <View style={styles.eventCardHeader}>
-                        <Ionicons
-                          name={event.type === 'Strike' ? 'alert-circle' : 'library'}
-                          size={18}
-                          color={event.type === 'Strike' ? '#1A202C' : '#DC2626'}
-                          style={{ marginRight: 8 }}
-                        />
-                        <Text style={styles.eventTypeText}>{event.type}</Text>
-                      </View>
-                      <View style={styles.shiftTimeRow}>
-                        <Ionicons name="time-outline" size={14} color="#4A5568" style={{ marginRight: 6 }} />
-                        <Text style={styles.shiftTimeText}>{event.time}</Text>
-                      </View>
-                    </View>
-                  ))}
+          {/* --- CALENDAR CARD --- */}
+          <View style={styles.calendarCard}>
+            <View style={styles.calendarHeader}>
+              <View style={styles.calendarTitleRow}>
+                <View style={styles.calendarIcon}>
+                  <Feather name="calendar" size={18} color="#FFF" />
                 </View>
-              )}
-
-              {selectedDay && selectedDay.shifts.length > 0 ? (
-                selectedDay.shifts.map((shift) => (
-                  <View key={shift.id} style={styles.shiftCard}>
-                    <View style={styles.shiftHeader}>
-                      <View style={styles.shiftHeaderLeft}>
-                        <View style={[styles.shiftAvatar, { backgroundColor: shift.color }]}>
-                          <Text style={styles.shiftAvatarText}>{shift.initials}</Text>
-                        </View>
-                        <View>
-                          <Text style={styles.shiftAssistantName}>{shift.assistant}</Text>
-                          <View style={styles.shiftPositionRow}>
-                            <Ionicons name="location-outline" size={12} color="#718096" />
-                            <Text style={styles.shiftPosition}>{shift.position}</Text>
-                          </View>
-                        </View>
-                      </View>
-                      <View style={styles.shiftHoursBadge}>
-                        <Text style={styles.shiftHoursText}>{shift.hours}</Text>
-                      </View>
-                    </View>
-                    <View style={styles.shiftTimeRow}>
-                      <Ionicons name="time-outline" size={14} color="#4A5568" style={{ marginRight: 6 }} />
-                      <Text style={styles.shiftTimeText}>{shift.time}</Text>
-                    </View>
-                  </View>
-                ))
-              ) : (
-                selectedDay && selectedDay.events.length === 0 && (
-                  <View style={styles.emptyState}>
-                    <Ionicons name="calendar-outline" size={48} color="#CBD5E0" />
-                    <Text style={styles.emptyStateText}>Nothing scheduled for this day</Text>
-                  </View>
-                )
-              )}
-            </ScrollView>
-
-            <View style={styles.modalActions}>
-              <TouchableOpacity
-                style={styles.closeModalButton}
-                onPress={() => setIsDayModalVisible(false)}
-              >
-                <Text style={styles.closeModalButtonText}>Close</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[styles.assignModalButton, hasClosingEvent && styles.disabledButton]}
-                onPress={() => {
-                  if (hasClosingEvent) return;
-                  setIsDayModalVisible(false);
-                  setIsAssignModalVisible(true);
-                }}
-                disabled={hasClosingEvent}
-              >
-                <Ionicons
-                  name="add-outline"
-                  size={18}
-                  color={hasClosingEvent ? '#E2E8F0' : '#FFFFFF'}
-                  style={{ marginRight: 6 }}
-                />
-                <Text style={[
-                  styles.assignModalButtonText,
-                  hasClosingEvent && { color: '#E2E8F0' }
-                ]}>
-                  Assign Shift
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </KeyboardAvoidingView>
-      </Modal>
-
-      {/* ADD EVENT MODAL */}
-      <Modal
-        animationType="slide"
-        transparent={true}
-        visible={isEventModalVisible}
-        onRequestClose={() => setIsEventModalVisible(false)}
-      >
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          style={styles.modalOverlay}
-        >
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Add New Event</Text>
-              <TouchableOpacity onPress={() => setIsEventModalVisible(false)}>
-                <Ionicons name="close-circle" size={28} color="#A0AEC0" />
-              </TouchableOpacity>
+                <View>
+                  <Text style={styles.calendarTitle}>October 2026</Text>
+                  <Text style={styles.calendarSubtitle}>Library Resource Unit</Text>
+                </View>
+              </View>
+              <View style={styles.calendarControls}>
+                <TouchableOpacity style={styles.calendarNavBtn}><Feather name="chevron-left" size={16} color={COLORS.textMuted} /></TouchableOpacity>
+                <TouchableOpacity style={styles.todayBtn}><Text style={styles.todayBtnText}>TODAY</Text></TouchableOpacity>
+                <TouchableOpacity style={styles.calendarNavBtn}><Feather name="chevron-right" size={16} color={COLORS.textMuted} /></TouchableOpacity>
+              </View>
             </View>
 
-            <Text style={styles.inputLabel}>Date of Event</Text>
-            <TouchableOpacity
-              style={styles.inputWrapper}
-              onPress={() => setShowEventDatePicker(true)}
-            >
-              <Ionicons name="calendar-outline" size={18} color="#A0AEC0" style={styles.inputIcon} />
-              <Text style={[styles.input, !eventDate && { color: '#A0AEC0' }]}>
-                {eventDate ? formatDate(eventDate) : 'Tap to select a date'}
-              </Text>
-              <Ionicons name="chevron-down" size={18} color="#A0AEC0" />
-            </TouchableOpacity>
-
-            <Text style={styles.inputLabel}>Event Type</Text>
-            <View style={styles.pickerWrapper}>
-              <Picker
-                selectedValue={eventType}
-                onValueChange={(itemValue) => setEventType(itemValue)}
-                style={styles.picker}
-                dropdownIconColor="#1E3A8A"
-              >
-                <Picker.Item label="Strike" value="Strike" />
-                <Picker.Item label="Library Closure" value="Library Closure" />
-              </Picker>
-            </View>
-
-            {/* ✅ Removed the "Time of Event" text field entirely */}
-
-            <View style={styles.modalActions}>
-              <TouchableOpacity style={styles.cancelButton} onPress={() => setIsEventModalVisible(false)}>
-                <Text style={styles.cancelButtonText}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.saveButton} onPress={handleAddEvent}>
-                <Text style={styles.saveButtonText}>Add Event</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </KeyboardAvoidingView>
-      </Modal>
-
-      {/* ASSIGN SHIFT MODAL */}
-      <Modal
-        animationType="slide"
-        transparent={true}
-        visible={isAssignModalVisible}
-        onRequestClose={() => setIsAssignModalVisible(false)}
-      >
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          style={styles.modalOverlay}
-        >
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Assign Shift</Text>
-              <TouchableOpacity onPress={() => setIsAssignModalVisible(false)}>
-                <Ionicons name="close-circle" size={28} color="#A0AEC0" />
-              </TouchableOpacity>
-            </View>
-
-            <Text style={styles.inputLabel}>Date of Shift</Text>
-            {/* ✅ Display the selected date as read-only info */}
-            <View style={[styles.inputWrapper, { backgroundColor: '#F0F4F8', borderColor: '#E2E8F0' }]}>
-              <Ionicons name="calendar-outline" size={18} color="#A0AEC0" style={styles.inputIcon} />
-              <Text style={[styles.input, { color: '#4A5568', paddingTop: Platform.OS === 'ios' ? 12 : 0 }]}>
-                {selectedDay ? `${selectedDay.month} ${selectedDay.day}, ${selectedDay.year}` : 'No date selected'}
-              </Text>
-            </View>
-
-            <Text style={styles.inputLabel}>Student Assistant</Text>
-            <View style={styles.pickerWrapper}>
-              <Picker
-                selectedValue={selectedAssistant}
-                onValueChange={(itemValue) => setSelectedAssistant(itemValue)}
-                style={styles.picker}
-                dropdownIconColor="#1E3A8A"
-              >
-                {assistants.map((assistant) => (
-                  <Picker.Item key={assistant.id} label={assistant.name} value={assistant.name} />
+            {/* Calendar Grid */}
+            <View style={styles.gridContainer}>
+              {/* Week Days */}
+              <View style={styles.weekRow}>
+                {weekDays.map((day) => (
+                  <Text key={day} style={styles.weekDayText}>{day}</Text>
                 ))}
-              </Picker>
+              </View>
+              {/* Days */}
+              <View style={styles.daysContainer}>
+                {calendarDays.map((item, index) => (
+                  <View key={index} style={[styles.dayCell, item.selected && styles.dayCellSelected]}>
+                    <Text style={[styles.dayText, !item.current && styles.dayTextMuted]}>{item.day}</Text>
+                    {/* Mock Event Tags */}
+                    {item.day === '28' && <View style={[styles.eventTag, { backgroundColor: COLORS.purpleLight }]}><Text style={[styles.eventText, { color: COLORS.purpleText }]}>PETER THOMAS</Text></View>}
+                    {item.day === '29' && <View style={[styles.eventTag, { backgroundColor: COLORS.grayLight }]}><Text style={[styles.eventText, { color: COLORS.grayText }]}>APPROVED LEA...</Text></View>}
+                    {item.day === '30' && <View style={[styles.eventTag, { backgroundColor: COLORS.purpleLight }]}><Text style={[styles.eventText, { color: COLORS.purpleText }]}>PETER THOMAS</Text></View>}
+                    {item.day === '7' && <View style={[styles.eventTag, { backgroundColor: COLORS.grayLight }]}><Text style={[styles.eventText, { color: COLORS.grayText }]}>APPROVED LEA...</Text></View>}
+                    {item.day === '15' && <View style={[styles.eventTag, { backgroundColor: COLORS.purpleLight }]}><Text style={[styles.eventText, { color: COLORS.purpleText }]}>SARAH NKOSI</Text></View>}
+                    {item.day === '15' && <View style={[styles.eventTag, { backgroundColor: COLORS.purpleLight, marginTop: 2 }]}><Text style={[styles.eventText, { color: COLORS.purpleText }]}>PETER THOMAS</Text></View>}
+                  </View>
+                ))}
+              </View>
             </View>
 
-            <Text style={styles.inputLabel}>Position</Text>
-            <View style={styles.pickerWrapper}>
-              <Picker
-                selectedValue={selectedPosition}
-                onValueChange={(itemValue) => setSelectedPosition(itemValue)}
-                style={styles.picker}
-                dropdownIconColor="#1E3A8A"
-              >
-                <Picker.Item label="Icenter" value="Icenter" />
-                <Picker.Item label="Help desk" value="Help desk" />
-              </Picker>
+            {/* Legend */}
+            <View style={styles.legendContainer}>
+              <Text style={styles.legendTitle}>LEGEND</Text>
+              <View style={styles.legendRow}>
+                <View style={styles.legendItem}><View style={[styles.legendDot, { backgroundColor: '#F59E0B' }]} /><Text style={styles.legendText}>John Doe</Text></View>
+                <View style={styles.legendItem}><View style={[styles.legendDot, { backgroundColor: '#8B5CF6' }]} /><Text style={styles.legendText}>Peter Thomas</Text></View>
+                <View style={styles.legendItem}><View style={[styles.legendDot, { backgroundColor: '#3B82F6' }]} /><Text style={styles.legendText}>Sarah Nkosi</Text></View>
+              </View>
+              <View style={styles.legendDescRow}>
+                <Text style={styles.legendDesc}><Text style={{ color: '#10B981' }}>■</Text> Green box - Holiday</Text>
+                <Text style={styles.legendDesc}><Text style={{ color: '#EF4444' }}>■</Text> Red box - Institutional closure</Text>
+                <Text style={styles.legendDesc}><Text style={{ color: '#9CA3AF' }}>■</Text> Grey box - date swapped to</Text>
+                <Text style={styles.legendDesc}><Text style={{ color: '#3B82F6' }}>□</Text> Blue box - date swapped from</Text>
+              </View>
             </View>
+          </View>
 
-            <Text style={styles.inputLabel}>Shift Time</Text>
-            <View style={styles.inputWrapper}>
-              <Ionicons name="time-outline" size={18} color="#A0AEC0" style={styles.inputIcon} />
-              <TextInput
-                style={styles.input}
-                placeholder="e.g. 14:00 - 16:00"
-                placeholderTextColor="#A0AEC0"
-                value={shiftTime}
-                onChangeText={setShiftTime}
-              />
-            </View>
-
-            <Text style={styles.inputLabel}>Duration (Hours)</Text>
-            <View style={styles.inputWrapper}>
-              <Ionicons name="hourglass-outline" size={18} color="#A0AEC0" style={styles.inputIcon} />
-              <TextInput
-                style={styles.input}
-                placeholder="e.g. 2"
-                placeholderTextColor="#A0AEC0"
-                keyboardType="numeric"
-                value={shiftDuration}
-                onChangeText={setShiftDuration}
-              />
-            </View>
-
-            <View style={styles.modalActions}>
-              <TouchableOpacity style={styles.cancelButton} onPress={() => setIsAssignModalVisible(false)}>
-                <Text style={styles.cancelButtonText}>Cancel</Text>
+          {/* --- SIDEBAR PANELS (Stacked on Mobile) --- */}
+          <View style={styles.sidePanel}>
+            {/* Selected Day Card */}
+            <View style={styles.panelCard}>
+              <Text style={styles.panelDate}>6 October 2026</Text>
+              <Text style={styles.panelSubtitle}>0 shifts scheduled</Text>
+              
+              <TouchableOpacity style={styles.closureButton}>
+                <Feather name="bell" size={14} color={COLORS.danger} />
+                <Text style={styles.closureButtonText}>Declare institutional closure</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.saveButton} onPress={handleAssignShift}>
-                <Text style={styles.saveButtonText}>Assign</Text>
+              
+              <View style={styles.noShiftsBox}>
+                <Text style={styles.noShiftsText}>No shifts scheduled for this date.</Text>
+              </View>
+            </View>
+
+            {/* Scheduling Tips */}
+            <View style={[styles.panelCard, styles.tipsCard]}>
+              <View style={styles.panelHeader}>
+                <Feather name="shield" size={16} color={COLORS.success} />
+                <Text style={styles.panelTitle}>Scheduling Tips</Text>
+              </View>
+              <Text style={styles.tipText}>• Each student has a unique color for quick scanning.</Text>
+              <Text style={styles.tipText}>• Days show up to 2 shifts before collapsing.</Text>
+            </View>
+
+            {/* View Timetable */}
+            <View style={styles.panelCard}>
+              <View style={styles.panelHeader}>
+                <Feather name="clock" size={16} color={COLORS.primary} />
+                <Text style={styles.panelTitle}>View Student Timetable</Text>
+              </View>
+              <Text style={styles.panelSubtitle}>Recent timetable uploads</Text>
+              <View style={styles.noShiftsBox}>
+                <Text style={styles.noShiftsText}>No timetables uploaded yet.</Text>
+              </View>
+              <TouchableOpacity style={styles.viewAllButton}>
+                <Text style={styles.viewAllText}>View all uploads</Text>
               </TouchableOpacity>
             </View>
           </View>
-        </KeyboardAvoidingView>
-      </Modal>
 
-      {/* CUSTOM DATE PICKER (Only needed for Event Modal now) */}
-      <CustomDatePicker
-        visible={showEventDatePicker}
-        onClose={() => setShowEventDatePicker(false)}
-        onSelect={handleEventDateSelect}
-        initialDate={eventDate}
-      />
+          {/* Padding for bottom nav */}
+          <View style={{ height: 100 }} />
+        </ScrollView>
 
+        {/* --- BOTTOM NAVIGATION BAR --- */}
+        <View style={styles.bottomNav}>
+          {[
+            { name: 'Dashboard', icon: 'grid' },
+            { name: 'Calendar', icon: 'calendar' },
+            { name: 'Requests', icon: 'file-text' },
+            { name: 'Assistances', icon: 'users' },
+            { name: 'Reports', icon: 'bar-chart-2' },
+          ].map((item) => (
+            <TouchableOpacity
+              key={item.name}
+              style={styles.navItem}
+              onPress={() => setActiveTab(item.name)}
+            >
+              <Feather
+                name={item.icon}
+                size={20}
+                color={activeTab === item.name ? COLORS.primary : COLORS.textMuted}
+              />
+              <Text
+                style={[
+                  styles.navText,
+                  activeTab === item.name && styles.navTextActive,
+                ]}
+              >
+                {item.name}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </ImageBackground>
     </SafeAreaView>
   );
 }
 
+// --- Styles ---
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: '#8FB3D9' },
+  container: { flex: 1, backgroundColor: COLORS.bg },
+  backgroundImage: { flex: 1, width: '100%', height: '100%' },
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(255, 255, 255, 0.7)', // 70% white overlay to fade the background image
+  },
+  scrollContent: { padding: 16 },
 
+  // Header
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E2E8F0',
+    marginBottom: 20,
   },
-  headerLeft: { flexDirection: 'row', alignItems: 'center' },
-  iconContainer: { width: 40, height: 40, marginRight: 10 },
-  headerTextContainer: { justifyContent: 'center' },
-  headerTitle: { fontSize: 16, fontWeight: '700', color: '#1A202C' },
-  headerSubtitle: { fontSize: 9, fontWeight: '600', color: '#718096', letterSpacing: 1, marginTop: 2 },
-  headerRight: { flexDirection: 'row', alignItems: 'center' },
-  iconButton: { marginLeft: 16 },
+  themeToggle: { flexDirection: 'row', alignItems: 'center' },
+  themeText: { marginLeft: 6, fontSize: 12, color: COLORS.textMuted },
+  userProfile: { flexDirection: 'row', alignItems: 'center' },
+  userInfo: { alignItems: 'flex-end', marginRight: 8 },
+  userName: { fontSize: 12, fontWeight: 'bold', color: COLORS.textMain },
+  userRole: { fontSize: 10, color: COLORS.textMuted },
+  avatar: {
+    width: 36, height: 36, borderRadius: 18, backgroundColor: COLORS.primary,
+    justifyContent: 'center', alignItems: 'center',
+  },
+  avatarText: { color: '#FFF', fontWeight: 'bold', fontSize: 14 },
 
-  scrollContent: { padding: 20, paddingBottom: 100 },
-  portalHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 6 },
-  portalIcon: { marginRight: 6 },
-  portalTitle: { fontSize: 11, fontWeight: '800', color: '#1E3A8A', letterSpacing: 0.5 },
-  pageTitle: { fontSize: 26, fontWeight: '800', color: '#1A202C', marginBottom: 6 },
-  pageSubtitle: { fontSize: 14, color: '#4A5568', marginBottom: 20 },
+  // Title Section
+  titleSection: { marginBottom: 16 },
+  titleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
+  pageTitle: { fontSize: 24, fontWeight: 'bold', color: COLORS.darkBlue, fontFamily: 'serif' },
+  actionButtons: { flexDirection: 'row', gap: 8 },
+  refreshButton: {
+    backgroundColor: '#FFF', borderWidth: 1, borderColor: COLORS.border,
+    padding: 8, borderRadius: 6,
+  },
+  newShiftButton: {
+    backgroundColor: COLORS.primary, flexDirection: 'row', alignItems: 'center',
+    paddingHorizontal: 12, paddingVertical: 8, borderRadius: 6, gap: 4,
+  },
+  newShiftText: { color: '#FFF', fontSize: 12, fontWeight: 'bold' },
+  pageSubtitle: { fontSize: 13, color: COLORS.textMuted, lineHeight: 18 },
 
-  calendarCard: { backgroundColor: '#FFFFFF', borderRadius: 12, padding: 16, marginBottom: 24, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 2 },
+  // Stats Row
+  statsRow: { flexDirection: 'row', gap: 8, marginBottom: 16 },
+  statCard: {
+    flex: 1, backgroundColor: COLORS.card, padding: 12, borderRadius: 8,
+    borderWidth: 1, borderColor: COLORS.border, flexDirection: 'row', alignItems: 'center',
+  },
+  statIndicator: { width: 4, height: 24, borderRadius: 2, marginRight: 8 },
+  statLabel: { fontSize: 8, fontWeight: 'bold', color: COLORS.textMuted, letterSpacing: 0.5 },
+  statValue: { fontSize: 16, fontWeight: 'bold', color: COLORS.darkBlue },
+
+  // Calendar Card
+  calendarCard: {
+    backgroundColor: COLORS.card, borderRadius: 12, padding: 16,
+    borderWidth: 1, borderColor: COLORS.border, marginBottom: 16,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 2,
+  },
   calendarHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
-  calendarMonth: { fontSize: 18, fontWeight: '700', color: '#1A202C' },
-  calendarSubtext: { fontSize: 11, fontWeight: '600', color: '#718096', marginTop: 2 },
-  calendarNav: { flexDirection: 'row', alignItems: 'center' },
-  navArrow: { padding: 8, backgroundColor: '#EDF2F7', borderRadius: 6, marginLeft: 8 },
-
-  addEventButtonSmall: {
-    width: 32,
-    height: 32,
-    borderRadius: 6,
-    backgroundColor: '#1E3A8A',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginLeft: 8,
+  calendarTitleRow: { flexDirection: 'row', alignItems: 'center' },
+  calendarIcon: {
+    width: 32, height: 32, borderRadius: 6, backgroundColor: COLORS.primary,
+    justifyContent: 'center', alignItems: 'center', marginRight: 8,
   },
-
-  daysRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10 },
-  dayLabel: { width: '14%', textAlign: 'center', fontSize: 12, fontWeight: '600', color: '#718096' },
-  calendarGrid: { flexDirection: 'row', flexWrap: 'wrap' },
-  calendarCell: { width: '14%', alignItems: 'center', marginBottom: 12, height: 44, justifyContent: 'flex-start' },
-
-  dateCircle: { width: 32, height: 32, borderRadius: 16, justifyContent: 'center', alignItems: 'center' },
-  activeDate: { backgroundColor: '#1E3A8A' },
-  dateText: { fontSize: 13, fontWeight: '600', color: '#1A202C' },
-  activeDateText: { color: '#FFFFFF' },
-  todayLabel: { fontSize: 8, fontWeight: '800', color: '#1E3A8A', position: 'absolute', bottom: -6 },
-
-  sundayDate: { backgroundColor: '#F1F5F9' },
-  sundayDateText: { color: '#CBD5E0' },
-
-  holidayDate: { backgroundColor: '#F3E8FF' },
-  holidayDateText: { color: '#7C3AED', fontWeight: '700' },
-  holidayLabel: {
-    fontSize: 8,
-    fontWeight: '800',
-    color: '#7C3AED',
-    position: 'absolute',
-    bottom: -6,
+  calendarTitle: { fontSize: 16, fontWeight: 'bold', color: COLORS.darkBlue },
+  calendarSubtitle: { fontSize: 11, color: COLORS.textMuted },
+  calendarControls: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  calendarNavBtn: {
+    padding: 6, backgroundColor: COLORS.grayLight, borderRadius: 4,
   },
+  todayBtn: {
+    backgroundColor: '#FFF', borderWidth: 1, borderColor: COLORS.border,
+    paddingHorizontal: 8, paddingVertical: 6, borderRadius: 4,
+  },
+  todayBtnText: { fontSize: 10, fontWeight: 'bold', color: COLORS.textMain },
 
-  dotContainer: { flexDirection: 'row', marginTop: 2, height: 6, alignItems: 'center' },
-  dot: { width: 5, height: 5, borderRadius: 2.5, marginHorizontal: 1 },
+  // Calendar Grid
+  gridContainer: { marginBottom: 16 },
+  weekRow: { flexDirection: 'row', justifyContent: 'space-around', marginBottom: 8 },
+  weekDayText: { fontSize: 9, fontWeight: 'bold', color: COLORS.textMuted, width: '14.28%', textAlign: 'center' },
+  daysContainer: { flexDirection: 'row', flexWrap: 'wrap' },
+  dayCell: {
+    width: '14.28%', height: 55, borderBottomWidth: 1, borderRightWidth: 1,
+    borderColor: COLORS.border, padding: 2, alignItems: 'center',
+  },
+  dayCellSelected: { backgroundColor: '#EFF6FF' },
+  dayText: { fontSize: 11, fontWeight: 'bold', color: COLORS.textMain, marginTop: 2 },
+  dayTextMuted: { color: '#D1D5DB' },
+  eventTag: { width: '100%', padding: 1, borderRadius: 2, marginTop: 2, alignItems: 'center' },
+  eventText: { fontSize: 5, fontWeight: 'bold' },
 
-  legendRow: {
+  // Legend
+  legendContainer: { marginTop: 8, paddingTop: 12, borderTopWidth: 1, borderTopColor: COLORS.border },
+  legendTitle: { fontSize: 10, fontWeight: 'bold', color: COLORS.textMain, marginBottom: 8 },
+  legendRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginBottom: 8 },
+  legendItem: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  legendDot: { width: 6, height: 6, borderRadius: 3 },
+  legendText: { fontSize: 10, color: COLORS.textMuted },
+  legendDescRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  legendDesc: { fontSize: 9, color: COLORS.textMuted },
+
+  // Side Panel (Stacked Cards)
+  sidePanel: { gap: 16 },
+  panelCard: {
+    backgroundColor: COLORS.card, borderRadius: 12, padding: 16,
+    borderWidth: 1, borderColor: COLORS.border,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 2,
+  },
+  panelDate: { fontSize: 18, fontWeight: 'bold', color: COLORS.darkBlue, marginBottom: 4 },
+  panelSubtitle: { fontSize: 12, color: COLORS.textMuted, marginBottom: 12 },
+  closureButton: {
+    flexDirection: 'row', justifyContent: 'center', alignItems: 'center',
+    borderWidth: 1, borderColor: COLORS.danger, borderRadius: 6,
+    paddingVertical: 8, gap: 6, marginBottom: 12,
+  },
+  closureButtonText: { color: COLORS.danger, fontSize: 12, fontWeight: 'bold' },
+  noShiftsBox: {
+    backgroundColor: '#F9FAFB', padding: 16, borderRadius: 8,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  noShiftsText: { fontSize: 12, color: COLORS.textMuted },
+
+  // Tips Card
+  tipsCard: { backgroundColor: '#F0FDF4', borderColor: '#DCFCE7' },
+  panelHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 },
+  panelTitle: { fontSize: 14, fontWeight: 'bold', color: COLORS.textMain },
+  tipText: { fontSize: 12, color: COLORS.textMuted, marginBottom: 4, lineHeight: 16 },
+
+  // View Timetable Card
+  viewAllButton: {
+    backgroundColor: COLORS.primary, paddingVertical: 10,
+    borderRadius: 6, alignItems: 'center', marginTop: 12,
+  },
+  viewAllText: { color: '#FFF', fontSize: 12, fontWeight: 'bold' },
+
+  // Bottom Navigation Bar
+  bottomNav: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    flexWrap: 'wrap',
-    marginTop: 10,
+    justifyContent: 'space-around',
+    alignItems: 'center',
+    backgroundColor: COLORS.card,
     borderTopWidth: 1,
-    borderTopColor: '#E2E8F0',
-    paddingTop: 16,
+    borderTopColor: COLORS.border,
+    paddingVertical: 10,
+    paddingBottom: 20,
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
   },
-  legendItem: { flexDirection: 'row', alignItems: 'center', marginRight: 8 },
-  legendDot: { width: 7, height: 7, borderRadius: 3.5, marginRight: 4 },
-  legendText: { fontSize: 9, color: '#4A5568', fontWeight: '600' },
-
-  sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
-  sectionTitleContainer: { flexDirection: 'row', alignItems: 'center' },
-  sectionIcon: { marginRight: 6 },
-  sectionTitle: { fontSize: 14, fontWeight: '700', color: '#1E3A8A' },
-  assignedBadge: { backgroundColor: '#FFFFFF', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 },
-  assignedBadgeText: { fontSize: 11, fontWeight: '700', color: '#1E3A8A' },
-  assistantCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFFFFF', borderRadius: 12, padding: 16, marginBottom: 10, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 2, elevation: 2 },
-  avatar: { width: 44, height: 44, borderRadius: 22, justifyContent: 'center', alignItems: 'center', marginRight: 14 },
-  avatarText: { fontSize: 16, fontWeight: '700', color: '#6B46C1' },
-  assistantInfo: { flex: 1 },
-  assistantName: { fontSize: 15, fontWeight: '700', color: '#1A202C', marginBottom: 2 },
-  assistantRole: { fontSize: 12, color: '#718096' },
-  statusBadge: { borderWidth: 1, borderColor: '#1E3A8A', borderRadius: 12, paddingHorizontal: 8, paddingVertical: 4 },
-  statusBadgePending: { borderColor: '#A0AEC0' },
-  statusText: { fontSize: 9, fontWeight: '700', color: '#1E3A8A', letterSpacing: 0.5 },
-  statusTextPending: { color: '#A0AEC0' },
-  scheduledCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255, 255, 255, 0.4)', borderRadius: 12, padding: 16, marginTop: 6, marginBottom: 16, borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.6)' },
-  scheduledIconContainer: { marginRight: 12 },
-  scheduledText: { flex: 1, fontSize: 12, fontWeight: '800', color: '#1E3A8A', letterSpacing: 0.5 },
-  scheduledValue: { fontSize: 20, fontWeight: '800', color: '#1E3A8A' },
-
-  detailsCard: { backgroundColor: '#1E3A8A', borderRadius: 12, padding: 20, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 8, elevation: 4, marginBottom: 20 },
-  detailsHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 },
-  detailsIconContainer: { width: 40, height: 40, borderRadius: 8, backgroundColor: 'rgba(255, 255, 255, 0.2)', justifyContent: 'center', alignItems: 'center' },
-  eventBadge: { backgroundColor: 'rgba(255, 255, 255, 0.2)', borderRadius: 12, paddingHorizontal: 10, paddingVertical: 4 },
-  eventBadgeText: { fontSize: 10, fontWeight: '700', color: '#FFFFFF' },
-  detailsTitle: { fontSize: 20, fontWeight: '800', color: '#FFFFFF', marginBottom: 4 },
-  detailsSubtitle: { fontSize: 14, color: '#A0C1DD', marginBottom: 16 },
-
-  holidayBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(147, 51, 234, 0.25)',
-    borderWidth: 1,
-    borderColor: '#A78BFA',
-    borderRadius: 10,
-    padding: 12,
-    marginBottom: 12,
-  },
-  holidayBannerLabel: {
-    fontSize: 9,
-    fontWeight: '800',
-    color: '#DDD6FE',
-    letterSpacing: 1,
-    marginLeft: 10,
-  },
-  holidayBannerName: {
-    fontSize: 14,
-    fontWeight: '800',
-    color: '#FFFFFF',
-    marginLeft: 10,
-    marginTop: 2,
-  },
-
-  summaryRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-    borderRadius: 10,
-    padding: 12,
-    marginBottom: 16,
-  },
-  summaryItem: { flex: 1, alignItems: 'center' },
-  summaryLabel: { fontSize: 10, color: '#A0C1DD', fontWeight: '600', marginTop: 4, letterSpacing: 0.5 },
-  summaryValue: { fontSize: 18, color: '#FFFFFF', fontWeight: '800', marginTop: 2 },
-
-  detailsList: { marginTop: 4 },
-  detailsListTitle: { fontSize: 10, color: '#A0C1DD', fontWeight: '800', letterSpacing: 1, marginBottom: 8 },
-  detailsListItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: 6 },
-  detailsAvatar: { width: 28, height: 28, borderRadius: 14, justifyContent: 'center', alignItems: 'center', marginRight: 10 },
-  detailsAvatarText: { fontSize: 11, fontWeight: '700', color: '#FFFFFF' },
-  detailsListName: { flex: 1, fontSize: 13, color: '#FFFFFF', fontWeight: '600' },
-  detailsListTime: { fontSize: 12, color: '#A0C1DD', fontWeight: '600' },
-  detailsEmpty: { fontSize: 12, color: '#A0C1DD', fontStyle: 'italic', textAlign: 'center', paddingVertical: 8 },
-
-  bottomNav: { position: 'absolute', bottom: 0, left: 0, right: 0, flexDirection: 'row', backgroundColor: '#FFFFFF', borderTopWidth: 1, borderTopColor: '#E5E7EB', paddingVertical: 10, paddingBottom: Platform.OS === 'ios' ? 25 : 10, justifyContent: 'space-around', alignItems: 'center' },
-  navItem: { alignItems: 'center', justifyContent: 'center' },
-  navIconContainer: { position: 'relative' },
-  navBadge: { position: 'absolute', top: -4, right: -6, backgroundColor: '#EF4444', borderRadius: 8, width: 16, height: 16, justifyContent: 'center', alignItems: 'center' },
-  navBadgeText: { color: '#FFFFFF', fontSize: 10, fontWeight: 'bold' },
-  navText: { fontSize: 12, color: '#6B7280', marginTop: 4, fontWeight: '500' },
-  navTextActive: { color: '#2563EB', fontWeight: '700' },
-
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.5)', justifyContent: 'center', alignItems: 'center', padding: 20 },
-  modalContent: { backgroundColor: '#FFFFFF', borderRadius: 16, padding: 20, width: '100%', maxWidth: 400, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 8, elevation: 5 },
-  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
-  modalTitle: { fontSize: 20, fontWeight: '800', color: '#1A202C' },
-  modalSubtitle: { fontSize: 13, color: '#718096', marginTop: 2 },
-  inputLabel: { fontSize: 14, fontWeight: '600', color: '#4A5568', marginBottom: 8 },
-  pickerWrapper: { backgroundColor: '#F7FAFC', borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 8, marginBottom: 20, overflow: 'hidden' },
-  picker: { width: '100%', height: 50, color: '#1A202C' },
-  inputWrapper: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F7FAFC', borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 8, paddingHorizontal: 12, height: 50, marginBottom: 24 },
-  inputIcon: { marginRight: 10 },
-  input: { flex: 1, fontSize: 15, color: '#1A202C' },
-  modalActions: { flexDirection: 'row', justifyContent: 'space-between' },
-  cancelButton: { flex: 1, backgroundColor: '#EDF2F7', borderRadius: 8, paddingVertical: 14, alignItems: 'center', marginRight: 8 },
-  cancelButtonText: { fontSize: 14, fontWeight: '700', color: '#4A5568' },
-  saveButton: { flex: 1, backgroundColor: '#1E3A8A', borderRadius: 8, paddingVertical: 14, alignItems: 'center', marginLeft: 8 },
-  saveButtonText: { fontSize: 14, fontWeight: '700', color: '#FFFFFF' },
-
-  dayModalContent: { backgroundColor: '#FFFFFF', borderRadius: 16, padding: 20, width: '100%', maxWidth: 400, maxHeight: '80%', shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 8, elevation: 5 },
-  totalHoursCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#EFF6FF', borderRadius: 12, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: '#BFDBFE' },
-  totalHoursIconContainer: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#DBEAFE', justifyContent: 'center', alignItems: 'center', marginRight: 12 },
-  totalHoursTextContainer: { flex: 1 },
-  totalHoursLabel: { fontSize: 11, fontWeight: '700', color: '#1E3A8A', letterSpacing: 0.5, marginBottom: 2 },
-  totalHoursValue: { fontSize: 22, fontWeight: '800', color: '#1A202C' },
-  shiftsList: { maxHeight: 300, marginBottom: 16 },
-  shiftCard: { backgroundColor: '#F7FAFC', borderRadius: 10, padding: 14, marginBottom: 10, borderWidth: 1, borderColor: '#E2E8F0' },
-  shiftHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
-  shiftHeaderLeft: { flexDirection: 'row', alignItems: 'center', flex: 1 },
-  shiftAvatar: { width: 36, height: 36, borderRadius: 18, justifyContent: 'center', alignItems: 'center', marginRight: 10 },
-  shiftAvatarText: { fontSize: 13, fontWeight: '700', color: '#FFFFFF' },
-  shiftAssistantName: { fontSize: 14, fontWeight: '700', color: '#1A202C', marginBottom: 2 },
-  shiftPositionRow: { flexDirection: 'row', alignItems: 'center' },
-  shiftPosition: { fontSize: 11, color: '#718096', marginLeft: 4 },
-  shiftHoursBadge: { backgroundColor: '#1E3A8A', borderRadius: 10, paddingHorizontal: 10, paddingVertical: 4 },
-  shiftHoursText: { fontSize: 11, fontWeight: '700', color: '#FFFFFF' },
-  shiftTimeRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFFFFF', borderRadius: 6, paddingHorizontal: 10, paddingVertical: 8, borderWidth: 1, borderColor: '#E2E8F0' },
-  shiftTimeText: { fontSize: 13, fontWeight: '600', color: '#4A5568' },
-
-  sectionContainer: { marginBottom: 16 },
-  sectionHeaderTitle: { fontSize: 12, fontWeight: '800', color: '#1E3A8A', letterSpacing: 0.5, marginBottom: 8 },
-  eventCard: { backgroundColor: '#FEF2F2', borderRadius: 10, padding: 14, marginBottom: 10, borderWidth: 1, borderColor: '#FECACA' },
-  eventCardHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
-  eventTypeText: { fontSize: 14, fontWeight: '700', color: '#1A202C' },
-
-  emptyState: { alignItems: 'center', justifyContent: 'center', paddingVertical: 30 },
-  emptyStateText: { fontSize: 13, color: '#A0AEC0', marginTop: 10, fontStyle: 'italic' },
-  closeModalButton: { flex: 1, backgroundColor: '#EDF2F7', borderRadius: 8, paddingVertical: 14, alignItems: 'center', marginRight: 8 },
-  closeModalButtonText: { fontSize: 14, fontWeight: '700', color: '#4A5568' },
-  assignModalButton: { flex: 1, flexDirection: 'row', backgroundColor: '#1E3A8A', borderRadius: 8, paddingVertical: 14, alignItems: 'center', justifyContent: 'center', marginLeft: 8 },
-  assignModalButtonText: { fontSize: 14, fontWeight: '700', color: '#FFFFFF' },
-  disabledButton: { backgroundColor: '#A0AEC0', opacity: 0.7 },
-
-  datePickerOverlay: { flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.5)', justifyContent: 'center', alignItems: 'center', padding: 20 },
-  datePickerContent: { backgroundColor: '#FFFFFF', borderRadius: 16, padding: 16, width: '100%', maxWidth: 340, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 8, elevation: 5 },
-  datePickerHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
-  datePickerTitle: { fontSize: 17, fontWeight: '800', color: '#1A202C' },
-  datePickerNav: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
-  datePickerNavBtn: { padding: 8, backgroundColor: '#EDF2F7', borderRadius: 6 },
-  datePickerMonthText: { fontSize: 15, fontWeight: '700', color: '#1A202C' },
-  datePickerDaysRow: { flexDirection: 'row', marginBottom: 8 },
-  datePickerDayLabel: { flex: 1, textAlign: 'center', fontSize: 11, fontWeight: '700', color: '#718096' },
-  datePickerGrid: { flexDirection: 'row', flexWrap: 'wrap', marginBottom: 16 },
-  datePickerCell: { width: '14.28%', aspectRatio: 1, alignItems: 'center', justifyContent: 'center' },
-  datePickerDateCircle: { width: 34, height: 34, borderRadius: 17, justifyContent: 'center', alignItems: 'center' },
-  datePickerSelectedCircle: { backgroundColor: '#1E3A8A' },
-  datePickerDateText: { fontSize: 13, fontWeight: '600', color: '#1A202C' },
-  datePickerSelectedText: { color: '#FFFFFF', fontWeight: '700' },
-  datePickerCancelBtn: { backgroundColor: '#EDF2F7', borderRadius: 8, paddingVertical: 12, alignItems: 'center' },
-  datePickerCancelText: { fontSize: 14, fontWeight: '700', color: '#4A5568' },
+  navItem: { alignItems: 'center', justifyContent: 'center', padding: 4 },
+  navText: { fontSize: 10, color: COLORS.textMuted, marginTop: 4 },
+  navTextActive: { color: COLORS.primary, fontWeight: 'bold' },
 });

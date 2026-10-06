@@ -1,4 +1,5 @@
 import { Feather, Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router'; // <-- Added this
 import { useState } from 'react';
 import {
   Image,
@@ -10,7 +11,6 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-
 
 // --- Theme Colors ---
 const COLORS = {
@@ -29,6 +29,8 @@ export default function LandingPage() {
   const [isDarkMode, setIsDarkMode] = useState(false);
   const { width } = useWindowDimensions();
   const isTablet = width > 768;
+  
+  const router = useRouter(); // <-- Added this
 
   const toggleTheme = () => setIsDarkMode(!isDarkMode);
 
@@ -66,11 +68,20 @@ export default function LandingPage() {
           </Text>
 
           <View style={styles.heroButtons}>
-            <TouchableOpacity style={styles.primaryButton}>
+            {/* Login Button */}
+            <TouchableOpacity 
+              style={styles.primaryButton} 
+              onPress={() => router.push('/logIn')}
+            >
               <Text style={styles.primaryButtonText}>Login</Text>
               <Feather name="arrow-right" size={16} color="#FFF" />
             </TouchableOpacity>
-            <TouchableOpacity style={styles.secondaryButton}>
+
+            {/* Sign Up Button */}
+            <TouchableOpacity 
+              style={styles.secondaryButton}
+              onPress={() => router.push('/signStud')}
+            >
               <Text style={styles.secondaryButtonText}>Sign Up</Text>
             </TouchableOpacity>
           </View>

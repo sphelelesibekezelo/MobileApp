@@ -1,800 +1,348 @@
-// src/app/supRequest.jsx
-import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { Feather } from '@expo/vector-icons';
 import { useState } from 'react';
 import {
-  Image,
-  Modal,
-  Platform,
+  ImageBackground,
+  SafeAreaView,
   ScrollView,
+  StatusBar,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 
-import logoImg from "@/assets/images/logo.png";
-import { supervisorRequestData } from '../data/mockData';
+// --- Theme Colors ---
+const COLORS = {
+  primary: '#2563EB',
+  darkBlue: '#1E3A8A',
+  textMain: '#111827',
+  textMuted: '#6B7280',
+  bg: '#F8FAFC',
+  card: '#FFFFFF',
+  border: '#E5E7EB',
+  danger: '#EF4444',
+  success: '#10B981',
+  pendingBg: '#FEF3C7',
+  pendingText: '#D97706',
+  badgeLeaveBg: '#F3F4F6',
+  badgeLeaveText: '#374151',
+  avatarBg: '#E0E7FF',
+  avatarText: '#4F46E5',
+};
 
-const LEAVE_TYPES = supervisorRequestData.leaveTypes;
-
-// Reusable Submission Card Component
-const SubmissionCard = ({ item, onApprove, onReject }) => (
-  <View style={styles.card}>
-    {/* Header Row */}
-    <View style={styles.cardHeader}>
-      <View style={styles.cardHeaderLeft}>
-        <View style={[styles.avatar, { backgroundColor: item.avatarColor }]}>
-          <Text style={styles.avatarText}>{item.initials}</Text>
-        </View>
-        <Text style={styles.studentName}>{item.name}</Text>
-      </View>
-      <View style={styles.typeBadge}>
-        <Text style={styles.typeBadgeText}>{item.type}</Text>
-      </View>
-    </View>
-
-    <View style={styles.divider} />
-
-    {/* Body */}
-    <View style={styles.cardBody}>
-      <Text style={styles.requestText}>{item.reason}</Text>
-    </View>
-
-    {/* Meta Row */}
-    <View style={styles.metaRow}>
-      <View style={styles.dateContainer}>
-        <Ionicons name="calendar-outline" size={16} color="#718096" style={styles.metaIcon} />
-        <Text style={styles.dateText}>{item.date}</Text>
-      </View>
-      <View style={[
-        styles.statusBadge, 
-        item.status === 'APPROVED' && styles.statusApproved,
-        item.status === 'REJECTED' && styles.statusRejected,
-        item.status === 'PENDING' && styles.statusPending,
-      ]}>
-        <Ionicons 
-          name={item.status === 'PENDING' ? 'time-outline' : item.status === 'APPROVED' ? 'checkmark-circle-outline' : 'close-circle-outline'} 
-          size={12} 
-          color={item.status === 'APPROVED' ? '#16A34A' : item.status === 'REJECTED' ? '#DC2626' : '#B45309'} 
-          style={{ marginRight: 4 }}
-        />
-        <Text style={[
-          styles.statusText,
-          item.status === 'APPROVED' && styles.statusTextApproved,
-          item.status === 'REJECTED' && styles.statusTextRejected,
-          item.status === 'PENDING' && styles.statusTextPending,
-        ]}>
-          {item.status}
-        </Text>
-      </View>
-    </View>
-
-    {/* Action Buttons */}
-    {item.status === 'PENDING' && (
-      <View style={styles.actionRow}>
-        <TouchableOpacity 
-          style={styles.actionButton} 
-          onPress={() => onReject(item.id)}
-        >
-          <Ionicons name="close-circle-outline" size={20} color="#DC2626" style={{ marginRight: 6 }} />
-          <Text style={styles.rejectText}>REJECT</Text>
-        </TouchableOpacity>
-        
-        <View style={styles.actionDivider} />
-        
-        <TouchableOpacity 
-          style={styles.actionButton} 
-          onPress={() => onApprove(item.id)}
-        >
-          <Ionicons name="checkmark-circle-outline" size={20} color="#16A34A" style={{ marginRight: 6 }} />
-          <Text style={styles.approveText}>APPROVE</Text>
-        </TouchableOpacity>
-      </View>
-    )}
-  </View>
-);
-
-export default function SupervisorRequests() {
-  const router = useRouter();
-
-  // Search and Filter State
-  const [searchQuery, setSearchQuery] = useState('');
-  const [isFilterModalVisible, setIsFilterModalVisible] = useState(false);
-  const [selectedLeaveType, setSelectedLeaveType] = useState('All');
-
-  // Initial State for Submissions
-  const [submissions, setSubmissions] = useState(supervisorRequestData.submissions);
-
-  // Handle Approve/Reject Actions
-  const handleAction = (id, newStatus) => {
-    setSubmissions(prev => 
-      prev.map(item => 
-        item.id === id ? { ...item, status: newStatus } : item
-      )
-    );
-  };
-
-  // Filter Logic
-  const filteredSubmissions = submissions.filter(item => {
-    const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesFilter = selectedLeaveType === 'All' || item.type === selectedLeaveType;
-    return matchesSearch && matchesFilter;
-  });
+export default function OperationalRequests() {
+  const [activeTab, setActiveTab] = useState('Requests');
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
+    <SafeAreaView style={styles.container}>
+      <StatusBar barStyle="dark-content" />
       
-      {/* Top Header */}
-      <View style={styles.header}>
-        <View style={styles.headerLeft}>
-          <Image
-            source={logoImg}
-            style={styles.iconContainer}
-            resizeMode="contain" 
-          />
-          <View style={styles.headerTextContainer}>
-            <Text style={styles.headerTitle}>StudentAssistance</Text>
-            <Text style={styles.headerSubtitle}>ABSENCE TRACKER</Text>
-          </View>
-        </View>
-
-        <View style={styles.headerRight}>
-          <TouchableOpacity
-              style={styles.iconButton}
-              onPress={() => router.push('/supNotification')}
-          >
-              <Ionicons name="notifications-outline" size={22} color="#1E3A8A" />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.iconButton} onPress={() => router.push('/logOut')}>
-            <Ionicons name="log-out-outline" size={22} color="#1E3A8A" />
-          </TouchableOpacity>
-        </View>
-      </View>
-
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        
-        {/* Approval Rate Card */}
-        <View style={styles.approvalCard}>
-          <View style={styles.approvalIconContainer}>
-            <Ionicons name="pie-chart-outline" size={20} color="#1E3A8A" />
-          </View>
-          <View style={styles.approvalTextContainer}>
-            <Text style={styles.approvalLabel}>APPROVAL RATE</Text>
-            <Text style={styles.approvalValue}>82.5%</Text>
-          </View>
-        </View>
-
-        {/* Search Bar */}
-        <View style={styles.searchContainer}>
-          <Ionicons name="search-outline" size={20} color="#A0AEC0" style={styles.searchIcon} />
-          <TextInput 
-            style={styles.searchInput}
-            placeholder="Search by student name..."
-            placeholderTextColor="#A0AEC0"
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-          />
-          {searchQuery !== '' && (
-            <TouchableOpacity onPress={() => setSearchQuery('')}>
-              <Ionicons name="close-circle" size={20} color="#A0AEC0" />
-            </TouchableOpacity>
-          )}
-        </View>
-
-        {/* Filters */}
-        <View style={styles.filtersRow}>
-          <TouchableOpacity 
-            style={[styles.filterButton, selectedLeaveType !== 'All' && styles.filterButtonActive]} 
-            onPress={() => setIsFilterModalVisible(true)}
-          >
-            <Ionicons 
-              name="filter-outline" 
-              size={16} 
-              color={selectedLeaveType !== 'All' ? '#FFFFFF' : '#4A5568'} 
-              style={{ marginRight: 6 }} 
-            />
-            <Text style={[styles.filterText, selectedLeaveType !== 'All' && styles.filterTextActive]}>
-              {selectedLeaveType === 'All' ? 'Filter Type' : selectedLeaveType}
-            </Text>
-            {selectedLeaveType !== 'All' && (
-              <View style={styles.filterBadgeActive}>
-                <Text style={styles.filterBadgeTextActive}>1</Text>
-              </View>
-            )}
-          </TouchableOpacity>
-          
-          <TouchableOpacity style={styles.filterButton}>
-            <Ionicons name="calendar-outline" size={16} color="#4A5568" style={{ marginRight: 6 }} />
-            <Text style={styles.filterText}>This Month</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Section Title */}
-        <View style={styles.sectionHeader}>
-          <Ionicons name="swap-horizontal-outline" size={18} color="#1E3A8A" style={{ marginRight: 6 }} />
-          <Text style={styles.sectionTitle}>RECENT SUBMISSIONS</Text>
-        </View>
-
-        {/* Submissions List (Filtered) */}
-        {filteredSubmissions.length === 0 ? (
-          <View style={styles.emptyState}>
-            <Ionicons name="document-text-outline" size={48} color="#A0AEC0" />
-            <Text style={styles.emptyStateText}>No submissions found</Text>
-          </View>
-        ) : (
-          filteredSubmissions.map((item) => (
-            <SubmissionCard 
-              key={item.id} 
-              item={item} 
-              onApprove={(id) => handleAction(id, 'APPROVED')}
-              onReject={(id) => handleAction(id, 'REJECTED')}
-            />
-          ))
-        )}
-
-        {/* View All History Link */}
-        <TouchableOpacity
-          style={styles.viewAllButton}
-          onPress={() => router.push({
-            pathname: '/supReqHistory',
-            params: { submissions: JSON.stringify(submissions) },
-          })}
-        >
-          <Text style={styles.viewAllText}>VIEW ALL HISTORY</Text>
-          <Ionicons name="chevron-forward" size={16} color="#1E3A8A" style={{ marginLeft: 4 }} />
-        </TouchableOpacity>
-
-        {/* Footer Note */}
-        <View style={styles.footerNote}>
-          <Ionicons name="information-circle-outline" size={18} color="#4A5568" style={{ marginRight: 10, marginTop: 2 }} />
-          <Text style={styles.footerNoteText}>
-            All changes are logged for institutional audit compliance. Decisions made here are final and notified to students immediately.
-          </Text>
-        </View>
-
-      </ScrollView>
-
-      {/* --- BOTTOM NAVIGATION --- */}
-      <View style={styles.bottomNav}>
-        {/* Home Tab */}
-        <TouchableOpacity 
-          style={styles.navItem} 
-          onPress={() => router.push('/supervisorDash')}
-        >
-          <Ionicons name="grid-outline" size={24} color="#6B7280" />
-          <Text style={styles.navText}>Home</Text>
-        </TouchableOpacity>
-        
-        {/* Requests Tab (Active) */}
-        <TouchableOpacity style={styles.navItem}>
-          <View style={styles.navIconContainer}>
-            <Ionicons name="document-text" size={24} color="#2563EB" />
-            <View style={styles.navBadge}>
-              <Text style={styles.navBadgeText}>1</Text>
-            </View>
-          </View>
-          <Text style={[styles.navText, styles.navTextActive]}>Requests</Text>
-        </TouchableOpacity>
-
-        {/* Calendar Tab */}
-        <TouchableOpacity 
-          style={styles.navItem} 
-          onPress={() => router.push('/supCal')}
-        >
-          <Ionicons name="calendar-outline" size={24} color="#6B7280" />
-          <Text style={styles.navText}>Calendar</Text>
-        </TouchableOpacity>
-
-        {/* Reports Tab */}
-        <TouchableOpacity 
-          style={styles.navItem} 
-          onPress={() => router.push('/supReport')}
-        >
-          <Ionicons name="bar-chart-outline" size={24} color="#6B7280" />
-          <Text style={styles.navText}>Reports</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* --- FILTER MODAL --- */}
-      <Modal
-        animationType="fade"
-        transparent={true}
-        visible={isFilterModalVisible}
-        onRequestClose={() => setIsFilterModalVisible(false)}
+      {/* Background Image with 70% White Overlay */}
+      <ImageBackground 
+        source={{ uri: 'https://images.unsplash.com/photo-1507842217343-583bb7270b66?q=80&w=1590&auto=format&fit=crop' }} 
+        style={styles.backgroundImage}
+        resizeMode="cover"
       >
-        <TouchableOpacity 
-          style={styles.modalOverlay} 
-          activeOpacity={1} 
-          onPress={() => setIsFilterModalVisible(false)}
-        >
-          <TouchableOpacity 
-            style={styles.filterModalContent} 
-            activeOpacity={1} 
-            onPress={(e) => e.stopPropagation()}
-          >
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Filter by Leave Type</Text>
-              <TouchableOpacity onPress={() => setIsFilterModalVisible(false)}>
-                <Ionicons name="close-circle" size={28} color="#A0AEC0" />
-              </TouchableOpacity>
+        <View style={styles.overlay} />
+
+        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+          
+          {/* --- HEADER --- */}
+          <View style={styles.header}>
+            <TouchableOpacity style={styles.themeToggle}>
+              <Feather name="moon" size={16} color={COLORS.textMuted} />
+              <Text style={styles.themeText}>
+                Change mode <Text style={{ color: '#F59E0B' }}>Dark</Text>
+              </Text>
+            </TouchableOpacity>
+
+            <View style={styles.userProfile}>
+              <View style={styles.userInfo}>
+                <Text style={styles.userName}>Sbongile Monta</Text>
+                <Text style={styles.userRole}>Supervisor</Text>
+              </View>
+              <View style={styles.avatarSmall}>
+                <Text style={styles.avatarSmallText}>SM</Text>
+              </View>
+            </View>
+          </View>
+
+          {/* --- TITLE SECTION --- */}
+          <View style={styles.titleSection}>
+            <View style={styles.tag}>
+              <Text style={styles.tagText}>SBONGILE MONTA</Text>
+            </View>
+            <Text style={styles.pageTitle}>Operational Requests</Text>
+            <Text style={styles.pageSubtitle}>
+              Manage and process team shift swaps and leave applications submitted by student assistants.
+            </Text>
+          </View>
+
+          {/* --- ACTION BUTTONS --- */}
+          <View style={styles.actionButtonsRow}>
+            <TouchableOpacity style={[styles.actionButton, styles.actionButtonActive]}>
+              <Text style={styles.actionButtonTextActive}>Awaiting Review</Text>
+              <View style={styles.badgeDot}><Text style={styles.badgeDotText}>1</Text></View>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.actionButton}>
+              <Text style={styles.actionButtonText}>All Requests</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.actionButton}>
+              <Feather name="refresh-cw" size={14} color={COLORS.textMain} />
+              <Text style={styles.actionButtonText}>Refresh</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* --- STAT CARD --- */}
+          <View style={styles.statCard}>
+            <View style={styles.statIcon}>
+              <Feather name="shield" size={20} color={COLORS.success} />
+            </View>
+            <View>
+              <Text style={styles.statLabel}>REQUESTS IN SHARED WORKFLOW</Text>
+              <Text style={styles.statValue}>15</Text>
+            </View>
+          </View>
+
+          {/* --- SEARCH & FILTER --- */}
+          <View style={styles.searchFilterRow}>
+            <View style={styles.searchContainer}>
+              <Feather name="search" size={16} color={COLORS.textMuted} style={styles.searchIcon} />
+              <TextInput
+                style={styles.searchInput}
+                placeholder="Search by student name..."
+                placeholderTextColor="#9CA3AF"
+              />
+            </View>
+            <TouchableOpacity style={styles.filterButton}>
+              <Feather name="filter" size={14} color={COLORS.textMain} />
+              <Text style={styles.filterText}>Filter</Text>
+              <Feather name="chevron-down" size={14} color={COLORS.textMain} />
+            </TouchableOpacity>
+          </View>
+
+          {/* --- REQUEST CARD (Table Row converted to Card) --- */}
+          <View style={styles.requestCard}>
+            
+            {/* Card Header: Avatar, Name, Type */}
+            <View style={styles.requestHeader}>
+              <View style={styles.requestUserInfo}>
+                <View style={styles.avatarRequest}>
+                  <Text style={styles.avatarRequestText}>PT</Text>
+                </View>
+                <Text style={styles.requestName}>Peter Thomas</Text>
+              </View>
+              <View style={styles.leaveBadge}>
+                <Text style={styles.leaveBadgeText}>LEAVE</Text>
+              </View>
             </View>
 
-            <ScrollView showsVerticalScrollIndicator={false}>
-              {LEAVE_TYPES.map((type) => (
-                <TouchableOpacity
-                  key={type}
-                  style={[
-                    styles.filterOption,
-                    selectedLeaveType === type && styles.filterOptionActive
-                  ]}
-                  onPress={() => {
-                    setSelectedLeaveType(type);
-                    setIsFilterModalVisible(false);
-                  }}
-                >
-                  <Text style={[
-                    styles.filterOptionText,
-                    selectedLeaveType === type && styles.filterOptionTextActive
-                  ]}>
-                    {type}
-                  </Text>
-                  {selectedLeaveType === type && (
-                    <Ionicons name="checkmark-circle" size={20} color="#2563EB" />
-                  )}
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </TouchableOpacity>
-        </TouchableOpacity>
-      </Modal>
+            {/* Card Body: Details */}
+            <View style={styles.requestBody}>
+              <Text style={styles.requestQuote}>"I miss my family"</Text>
+              
+              <View style={styles.requestMetaRow}>
+                <Feather name="calendar" size={12} color={COLORS.textMuted} />
+                <Text style={styles.requestMetaText}>Oct 12, 2026 – Oct 13, 2026</Text>
+              </View>
+              
+              <View style={styles.requestMetaRow}>
+                <Feather name="clock" size={12} color={COLORS.textMuted} />
+                <Text style={styles.requestMetaText}>Filed recently</Text>
+              </View>
+            </View>
 
+            {/* Card Footer: Status & Actions */}
+            <View style={styles.requestFooter}>
+              <View style={styles.pendingBadge}>
+                <Text style={styles.pendingText}>Pending</Text>
+              </View>
+              <View style={styles.actionRow}>
+                <TouchableOpacity style={styles.declineButton}>
+                  <Feather name="x" size={14} color="#FFF" />
+                  <Text style={styles.declineButtonText}>Decline</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.approveButton}>
+                  <Feather name="check" size={14} color="#FFF" />
+                  <Text style={styles.approveButtonText}>Approve</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+
+          </View>
+
+          {/* Padding for bottom nav */}
+          <View style={{ height: 100 }} />
+        </ScrollView>
+
+        {/* --- BOTTOM NAVIGATION BAR --- */}
+        <View style={styles.bottomNav}>
+          {[
+            { name: 'Dashboard', icon: 'grid' },
+            { name: 'Calendar', icon: 'calendar' },
+            { name: 'Requests', icon: 'file-text' },
+            { name: 'Assistances', icon: 'users' },
+            { name: 'Reports', icon: 'bar-chart-2' },
+          ].map((item) => (
+            <TouchableOpacity
+              key={item.name}
+              style={styles.navItem}
+              onPress={() => setActiveTab(item.name)}
+            >
+              <Feather
+                name={item.icon}
+                size={20}
+                color={activeTab === item.name ? COLORS.primary : COLORS.textMuted}
+              />
+              <Text
+                style={[
+                  styles.navText,
+                  activeTab === item.name && styles.navTextActive,
+                ]}
+              >
+                {item.name}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </ImageBackground>
     </SafeAreaView>
   );
 }
 
+// --- Styles ---
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: '#8FB3D9', 
+  container: { flex: 1, backgroundColor: COLORS.bg },
+  backgroundImage: { flex: 1, width: '100%', height: '100%' },
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(255, 255, 255, 0.7)', // 70% white overlay to fade the background image
   },
-  // --- Header ---
+  scrollContent: { padding: 16 },
+
+  // Header
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E2E8F0',
-  },
-  headerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  iconContainer: {
-    width: 40,
-    height: 40,
-    marginRight: 10,
-  },
-  headerTextContainer: {
-    justifyContent: 'center',
-  },
-  headerTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#1A202C',
-  },
-  headerSubtitle: {
-    fontSize: 9,
-    fontWeight: '600',
-    color: '#718096',
-    letterSpacing: 1,
-    marginTop: 2,
-  },
-  headerRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  iconButton: {
-    marginLeft: 16,
-  },
-  scrollContent: {
-    padding: 20,
-    paddingBottom: 100,
-  },
-  approvalCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 16,
-    width: '55%',
     marginBottom: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
   },
-  approvalIconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#DBEAFE',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
+  themeToggle: { flexDirection: 'row', alignItems: 'center' },
+  themeText: { marginLeft: 6, fontSize: 12, color: COLORS.textMuted },
+  userProfile: { flexDirection: 'row', alignItems: 'center' },
+  userInfo: { alignItems: 'flex-end', marginRight: 8 },
+  userName: { fontSize: 12, fontWeight: 'bold', color: COLORS.textMain },
+  userRole: { fontSize: 10, color: COLORS.textMuted },
+  avatarSmall: {
+    width: 36, height: 36, borderRadius: 18, backgroundColor: COLORS.primary,
+    justifyContent: 'center', alignItems: 'center',
   },
-  approvalTextContainer: {
-    flex: 1,
-  },
-  approvalLabel: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: '#718096',
-    letterSpacing: 0.5,
-    marginBottom: 2,
-  },
-  approvalValue: {
-    fontSize: 22,
-    fontWeight: '800',
-    color: '#1A202C',
-  },
-  searchContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 10,
-    paddingHorizontal: 16,
-    height: 50,
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
-  },
-  searchIcon: {
-    marginRight: 10,
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: 15,
-    color: '#1A202C',
-  },
-  filtersRow: {
-    flexDirection: 'row',
-    marginBottom: 24,
-  },
-  filterButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    marginRight: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
-  },
-  filterButtonActive: {
-    backgroundColor: '#2563EB',
-  },
-  filterText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#4A5568',
-  },
-  filterTextActive: {
-    color: '#FFFFFF',
-  },
-  filterBadgeActive: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 8,
-    width: 16,
-    height: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginLeft: 6,
-  },
-  filterBadgeTextActive: {
-    color: '#2563EB',
-    fontSize: 9,
-    fontWeight: 'bold',
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  sectionTitle: {
-    fontSize: 13,
-    fontWeight: '800',
-    color: '#1E3A8A',
-    letterSpacing: 0.5,
-  },
-  card: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    marginBottom: 16,
-    overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  cardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 16,
-  },
-  cardHeaderLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  avatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  avatarText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#FFFFFF',
-  },
-  studentName: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#1A202C',
-  },
-  typeBadge: {
-    backgroundColor: '#EDF2F7',
-    borderRadius: 12,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-  },
-  typeBadgeText: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: '#4A5568',
-    letterSpacing: 0.5,
-  },
-  divider: {
-    height: 1,
-    backgroundColor: '#E2E8F0',
-    marginHorizontal: 16,
-  },
-  cardBody: {
-    padding: 16,
-  },
-  requestText: {
-    fontSize: 14,
-    color: '#4A5568',
-    lineHeight: 20,
-  },
-  metaRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingBottom: 16,
-  },
-  dateContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  metaIcon: {
-    marginRight: 6,
-  },
-  dateText: {
-    fontSize: 13,
-    color: '#718096',
-  },
-  statusBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderRadius: 12,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderWidth: 1,
-  },
-  statusPending: {
-    backgroundColor: '#FEF3C7',
-    borderColor: '#F59E0B',
-  },
-  statusApproved: {
-    backgroundColor: '#DCFCE7',
-    borderColor: '#16A34A',
-  },
-  statusRejected: {
-    backgroundColor: '#FEE2E2',
-    borderColor: '#DC2626',
-  },
-  statusText: {
-    fontSize: 10,
-    fontWeight: '700',
-  },
-  statusTextPending: { color: '#B45309' },
-  statusTextApproved: { color: '#16A34A' },
-  statusTextRejected: { color: '#DC2626' },
-  actionRow: {
-    flexDirection: 'row',
-    borderTopWidth: 1,
-    borderTopColor: '#E2E8F0',
-  },
+  avatarSmallText: { color: '#FFF', fontWeight: 'bold', fontSize: 14 },
+
+  // Title Section
+  titleSection: { marginBottom: 16 },
+  tag: { backgroundColor: '#EFF6FF', alignSelf: 'flex-start', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 4, marginBottom: 8 },
+  tagText: { fontSize: 10, fontWeight: 'bold', color: COLORS.primary, letterSpacing: 1 },
+  pageTitle: { fontSize: 24, fontWeight: 'bold', color: COLORS.darkBlue, fontFamily: 'serif', marginBottom: 8 },
+  pageSubtitle: { fontSize: 13, color: COLORS.textMuted, lineHeight: 18 },
+
+  // Action Buttons
+  actionButtonsRow: { flexDirection: 'row', gap: 8, marginBottom: 16, flexWrap: 'wrap' },
   actionButton: {
-    flex: 1,
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: 14,
+    flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFF',
+    paddingHorizontal: 12, paddingVertical: 8, borderRadius: 6,
+    borderWidth: 1, borderColor: COLORS.border, gap: 6,
   },
-  actionDivider: {
-    width: 1,
-    backgroundColor: '#E2E8F0',
+  actionButtonActive: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
+  actionButtonText: { fontSize: 12, fontWeight: '600', color: COLORS.textMain },
+  actionButtonTextActive: { fontSize: 12, fontWeight: '600', color: '#FFF' },
+  badgeDot: { backgroundColor: '#3B82F6', borderRadius: 10, paddingHorizontal: 6, paddingVertical: 2 },
+  badgeDotText: { color: '#FFF', fontSize: 10, fontWeight: 'bold' },
+
+  // Stat Card
+  statCard: {
+    flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.card,
+    padding: 16, borderRadius: 12, borderWidth: 1, borderColor: COLORS.border,
+    marginBottom: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05, shadowRadius: 4, elevation: 2,
   },
-  rejectText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#DC2626',
+  statIcon: {
+    width: 40, height: 40, borderRadius: 20, backgroundColor: '#F0FDF4',
+    justifyContent: 'center', alignItems: 'center', marginRight: 12,
   },
-  approveText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#16A34A',
+  statLabel: { fontSize: 10, fontWeight: 'bold', color: COLORS.textMuted, letterSpacing: 0.5 },
+  statValue: { fontSize: 24, fontWeight: 'bold', color: COLORS.darkBlue },
+
+  // Search & Filter
+  searchFilterRow: { flexDirection: 'row', gap: 8, marginBottom: 16 },
+  searchContainer: {
+    flex: 1, flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFF',
+    borderWidth: 1, borderColor: COLORS.border, borderRadius: 8, paddingHorizontal: 12,
   },
-  emptyState: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 40,
+  searchIcon: { marginRight: 8 },
+  searchInput: { flex: 1, paddingVertical: 10, fontSize: 13, color: COLORS.textMain },
+  filterButton: {
+    flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFF',
+    borderWidth: 1, borderColor: COLORS.border, borderRadius: 8,
+    paddingHorizontal: 12, gap: 4,
   },
-  emptyStateText: {
-    fontSize: 14,
-    color: '#A0AEC0',
-    marginTop: 10,
-    fontWeight: '600',
+  filterText: { fontSize: 12, fontWeight: '600', color: COLORS.textMain },
+
+  // Request Card
+  requestCard: {
+    backgroundColor: COLORS.card, borderRadius: 12, padding: 16,
+    borderWidth: 1, borderColor: COLORS.border, marginBottom: 16,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05, shadowRadius: 4, elevation: 2,
   },
-  viewAllButton: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: 16,
-    marginBottom: 10,
+  requestHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
+  requestUserInfo: { flexDirection: 'row', alignItems: 'center' },
+  avatarRequest: {
+    width: 32, height: 32, borderRadius: 16, backgroundColor: COLORS.avatarBg,
+    justifyContent: 'center', alignItems: 'center', marginRight: 10,
   },
-  viewAllText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#1E3A8A',
-    letterSpacing: 0.5,
+  avatarRequestText: { color: COLORS.avatarText, fontWeight: 'bold', fontSize: 12 },
+  requestName: { fontSize: 15, fontWeight: 'bold', color: COLORS.textMain },
+  leaveBadge: { backgroundColor: COLORS.badgeLeaveBg, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 4 },
+  leaveBadgeText: { fontSize: 10, fontWeight: 'bold', color: COLORS.badgeLeaveText },
+
+  requestBody: { marginBottom: 16 },
+  requestQuote: { fontSize: 14, fontStyle: 'italic', color: COLORS.textMuted, marginBottom: 8 },
+  requestMetaRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 4, gap: 6 },
+  requestMetaText: { fontSize: 12, color: COLORS.textMuted },
+
+  requestFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderTopWidth: 1, borderTopColor: COLORS.border, paddingTop: 12 },
+  pendingBadge: { backgroundColor: COLORS.pendingBg, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 },
+  pendingText: { color: COLORS.pendingText, fontSize: 12, fontWeight: 'bold' },
+  actionRow: { flexDirection: 'row', gap: 8 },
+  declineButton: {
+    flexDirection: 'row', alignItems: 'center', backgroundColor: '#EF4444',
+    paddingHorizontal: 12, paddingVertical: 6, borderRadius: 6, gap: 4,
   },
-  footerNote: {
-    flexDirection: 'row',
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
-    borderRadius: 8,
-    padding: 16,
-    alignItems: 'flex-start',
+  declineButtonText: { color: '#FFF', fontSize: 12, fontWeight: 'bold' },
+  approveButton: {
+    flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.primary,
+    paddingHorizontal: 12, paddingVertical: 6, borderRadius: 6, gap: 4,
   },
-  footerNoteText: {
-    flex: 1,
-    fontSize: 12,
-    color: '#2D3748',
-    lineHeight: 18,
-  },
+  approveButtonText: { color: '#FFF', fontSize: 12, fontWeight: 'bold' },
+
+  // Bottom Navigation Bar
   bottomNav: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    alignItems: 'center',
+    backgroundColor: COLORS.card,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.border,
+    paddingVertical: 10,
+    paddingBottom: 20,
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-    flexDirection: 'row',
-    backgroundColor: '#FFFFFF',
-    borderTopWidth: 1,
-    borderTopColor: '#E5E7EB',
-    paddingVertical: 10,
-    paddingBottom: Platform.OS === 'ios' ? 25 : 10,
-    justifyContent: 'space-around',
-    alignItems: 'center',
   },
-  navItem: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  navIconContainer: {
-    position: 'relative',
-  },
-  navBadge: {
-    position: 'absolute',
-    top: -4,
-    right: -6,
-    backgroundColor: '#EF4444',
-    borderRadius: 8,
-    width: 16,
-    height: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  navBadgeText: {
-    color: '#FFFFFF',
-    fontSize: 10,
-    fontWeight: 'bold',
-  },
-  navText: {
-    fontSize: 12,
-    color: '#6B7280',
-    marginTop: 4,
-    fontWeight: '500',
-  },
-  navTextActive: {
-    color: '#2563EB',
-    fontWeight: '700',
-  },
-  
-  // --- Filter Modal Styles ---
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  filterModalContent: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 20,
-    width: '100%',
-    maxWidth: 400,
-    maxHeight: '70%',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-    elevation: 5,
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: '#1A202C',
-  },
-  filterOption: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    borderRadius: 10,
-    backgroundColor: '#F7FAFC',
-    marginBottom: 8,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-  },
-  filterOptionActive: {
-    backgroundColor: '#DBEAFE',
-    borderColor: '#2563EB',
-  },
-  filterOptionText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#4A5568',
-  },
-  filterOptionTextActive: {
-    color: '#1E3A8A',
-    fontWeight: '800',
-  },
+  navItem: { alignItems: 'center', justifyContent: 'center', padding: 4 },
+  navText: { fontSize: 10, color: COLORS.textMuted, marginTop: 4 },
+  navTextActive: { color: COLORS.primary, fontWeight: 'bold' },
 });

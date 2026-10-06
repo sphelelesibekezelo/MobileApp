@@ -1,13 +1,11 @@
-// src/app/logIn.jsx
-import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { Feather, Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
 import {
-  Image,
-  KeyboardAvoidingView,
-  Platform,
+  ImageBackground,
+  Modal,
   SafeAreaView,
   ScrollView,
+  StatusBar,
   StyleSheet,
   Text,
   TextInput,
@@ -15,370 +13,442 @@ import {
   View,
 } from 'react-native';
 
-import logoImg from "@/assets/images/logo.png";
-import { ROUTES } from '../constants/studTheme';
+// --- Theme Colors ---
+const COLORS = {
+  primary: '#2563EB', // Bright blue
+  darkBlue: '#1E3A8A', // Dark blue heading
+  textMain: '#111827',
+  textMuted: '#6B7280',
+  bg: '#FFFFFF',
+  card: '#FFFFFF',
+  border: '#E5E7EB',
+  inputBg: '#F9FAFB',
+  toggleBg: '#F3F4F6',
+  modalOverlay: 'rgba(0, 0, 0, 0.5)',
+  resetBtnBg: '#DBEAFE', // Light blue for reset button
+  resetBtnText: '#1E3A8A', // Dark blue for reset button text
+};
 
-export default function LogInScreen() {
-  const router = useRouter();
-
-  // State for form
-  const [selectedRole, setSelectedRole] = useState('student'); 
+export default function LoginScreen() {
+  const [accountType, setAccountType] = useState('student');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [rememberMe, setRememberMe] = useState(false);
+  const [keepSignedIn, setKeepSignedIn] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
-  // Function to handle login (Bypassing backend for now)
-  const handleLogIn = () => {
-    // Directly navigate based on the selected role
-    if (selectedRole === 'student') {
-      router.replace(ROUTES.dashboard);
-    } else if (selectedRole === 'supervisor') {
-      router.replace('/supervisorDash'); 
-    } else {
-      alert("Please select a role.");
-    }
-  };
+  // Modal State
+  const [isForgotModalVisible, setIsForgotModalVisible] = useState(false);
+  const [staffNo, setStaffNo] = useState('');
+  const [resetEmail, setResetEmail] = useState('');
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.keyboardView}
+    <SafeAreaView style={styles.container}>
+      <StatusBar barStyle="dark-content" />
+      
+      {/* Background Image with Overlay */}
+      <ImageBackground
+        source={{ uri: 'https://images.unsplash.com/photo-1507842217343-583bb7270b66?q=80&w=1590&auto=format&fit=crop' }}
+        style={styles.backgroundImage}
+        blurRadius={4}
       >
-        {/* Top Header Bar */}
-        <View style={styles.header}>
-          <Image
-            source={logoImg}
-            style={styles.iconContainer}
-            resizeMode="contain" 
-          />
-          <View style={styles.headerTextContainer}>
-            <Text style={styles.headerTitle}>iCenter</Text>
-            <Text style={styles.headerSubtitle}>ABSENCE & LEAVE TRACKER</Text>
+        <View style={styles.overlay} />
+
+        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+          
+          {/* --- HEADER --- */}
+          <View style={styles.header}>
+            <View style={styles.logoContainer}>
+              <Ionicons name="school" size={28} color={COLORS.primary} />
+              <View style={styles.logoTextContainer}>
+                <Text style={styles.logoTitle}>iCenter</Text>
+                <Text style={styles.logoSubtitle}>ABSENCE AND LEAVE TRACKER</Text>
+              </View>
+            </View>
+            <TouchableOpacity style={styles.themeToggle}>
+              <Feather name="moon" size={14} color={COLORS.textMuted} />
+              <Text style={styles.themeText}>Change mode <Text style={{ color: '#F59E0B' }}>Dark</Text></Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* --- MAIN CONTENT --- */}
+          <View style={styles.mainContent}>
+            
+            {/* Welcome Section */}
+            <View style={styles.welcomeSection}>
+              <View style={styles.tag}>
+                <Text style={styles.tagDot}>●</Text>
+                <Text style={styles.tagText}>SECURE PORTAL</Text>
+              </View>
+              <Text style={styles.welcomeTitle}>Welcome back, student.</Text>
+              <Text style={styles.welcomeSubtitle}>
+                Sign in to keep attendance records moving, requests clear, and your next step close at hand.
+              </Text>
+              <View style={styles.securityNote}>
+                <Ionicons name="shield-checkmark-outline" size={16} color={COLORS.primary} />
+                <Text style={styles.securityText}>
+                  Your information is protected by institutional security.
+                </Text>
+              </View>
+            </View>
+
+            {/* Login Card */}
+            <View style={styles.card}>
+              <Text style={styles.cardTag}>PORTAL ACCESS</Text>
+              <Text style={styles.cardTitle}>Sign in to iCenter</Text>
+              <Text style={styles.cardSubtitle}>Choose your account type to continue.</Text>
+
+              {/* Account Type Toggle */}
+              <View style={styles.toggleContainer}>
+                <TouchableOpacity
+                  style={[styles.toggleButton, accountType === 'student' && styles.toggleButtonActive]}
+                  onPress={() => setAccountType('student')}
+                >
+                  <Feather name="user" size={14} color={accountType === 'student' ? COLORS.primary : COLORS.textMuted} />
+                  <Text style={[styles.toggleText, accountType === 'student' && styles.toggleTextActive]}>
+                    Student assistant
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.toggleButton, accountType === 'supervisor' && styles.toggleButtonActive]}
+                  onPress={() => setAccountType('supervisor')}
+                >
+                  <Feather name="users" size={14} color={accountType === 'supervisor' ? COLORS.primary : COLORS.textMuted} />
+                  <Text style={[styles.toggleText, accountType === 'supervisor' && styles.toggleTextActive]}>
+                    Supervisor
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* Form Fields */}
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>University email <Text style={styles.required}>*</Text></Text>
+                <View style={styles.inputWrapper}>
+                  <Feather name="mail" size={16} color={COLORS.textMuted} style={styles.inputIcon} />
+                  <TextInput
+                    style={styles.input}
+                    placeholder="studentnumber@tut4life.ac.za"
+                    placeholderTextColor="#9CA3AF"
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                    value={email}
+                    onChangeText={setEmail}
+                  />
+                </View>
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Password <Text style={styles.required}>*</Text></Text>
+                <View style={styles.inputWrapper}>
+                  <Feather name="lock" size={16} color={COLORS.textMuted} style={styles.inputIcon} />
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Enter your password"
+                    placeholderTextColor="#9CA3AF"
+                    secureTextEntry={!showPassword}
+                    value={password}
+                    onChangeText={setPassword}
+                  />
+                  <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeIcon}>
+                    <Feather name={showPassword ? 'eye-off' : 'eye'} size={16} color={COLORS.textMuted} />
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              {/* Options Row */}
+              <View style={styles.optionsRow}>
+                <TouchableOpacity 
+                  style={styles.checkboxContainer} 
+                  onPress={() => setKeepSignedIn(!keepSignedIn)}
+                >
+                  <View style={[styles.checkbox, keepSignedIn && styles.checkboxChecked]}>
+                    {keepSignedIn && <Feather name="check" size={12} color="#FFF" />}
+                  </View>
+                  <Text style={styles.checkboxText}>Keep me signed in</Text>
+                </TouchableOpacity>
+                
+                {/* --- FORGOT PASSWORD TRIGGER --- */}
+                <TouchableOpacity onPress={() => setIsForgotModalVisible(true)}>
+                  <Text style={styles.forgotPassword}>Forgot password?</Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* Submit Button */}
+              <TouchableOpacity style={styles.primaryButton}>
+                <Text style={styles.primaryButtonText}>
+                  Sign in as {accountType === 'student' ? 'student' : 'supervisor'}
+                </Text>
+                <Feather name="arrow-right" size={16} color="#FFF" />
+              </TouchableOpacity>
+
+              {/* Card Footer */}
+              <View style={styles.cardFooter}>
+                <Text style={styles.cardFooterText}>Don't have an account? </Text>
+                <TouchableOpacity>
+                  <Text style={styles.registerLink}>Register here</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+
+          {/* --- PAGE FOOTER --- */}
+          <View style={styles.pageFooter}>
+            <Text style={styles.footerText}>Need help? </Text>
+            <TouchableOpacity><Text style={styles.footerLink}>Contact iCenter support</Text></TouchableOpacity>
+            <Text style={styles.footerText}> • </Text>
+            <TouchableOpacity><Text style={styles.footerLink}>Return home</Text></TouchableOpacity>
+          </View>
+
+        </ScrollView>
+      </ImageBackground>
+
+      {/* ==================== FORGOT PASSWORD MODAL ==================== */}
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={isForgotModalVisible}
+        onRequestClose={() => setIsForgotModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContainer}>
+            
+            {/* Modal Header */}
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Forgot your password?</Text>
+              <TouchableOpacity onPress={() => setIsForgotModalVisible(false)} style={styles.closeButton}>
+                <Feather name="x" size={20} color={COLORS.textMuted} />
+              </TouchableOpacity>
+            </View>
+
+            {/* Modal Description */}
+            <Text style={styles.modalDescription}>
+              Enter your Staff/Student No. and registered email address. We'll send you instructions to reset your password.
+            </Text>
+
+            {/* Staff/Student No. Input */}
+            <View style={styles.modalInputGroup}>
+              <Text style={styles.modalLabel}>Staff/Student No. <Text style={styles.required}>*</Text></Text>
+              <View style={styles.modalInputWrapper}>
+                <Feather name="user" size={16} color={COLORS.textMuted} style={styles.inputIcon} />
+                <TextInput
+                  style={styles.modalInput}
+                  placeholder="Staff No. or Student No."
+                  placeholderTextColor="#9CA3AF"
+                  value={staffNo}
+                  onChangeText={setStaffNo}
+                />
+              </View>
+            </View>
+
+            {/* Email Address Input */}
+            <View style={styles.modalInputGroup}>
+              <Text style={styles.modalLabel}>Email Address <Text style={styles.required}>*</Text></Text>
+              <View style={styles.modalInputWrapper}>
+                <Feather name="mail" size={16} color={COLORS.textMuted} style={styles.inputIcon} />
+                <TextInput
+                  style={styles.modalInput}
+                  placeholder="123456789@tut4life.ac.za"
+                  placeholderTextColor="#9CA3AF"
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  value={resetEmail}
+                  onChangeText={setResetEmail}
+                />
+              </View>
+            </View>
+
+            {/* Submit Reset Link Button */}
+            <TouchableOpacity 
+              style={styles.modalSubmitButton}
+              onPress={() => {
+                // Handle send reset link logic here
+                setIsForgotModalVisible(false);
+              }}
+            >
+              <Text style={styles.modalSubmitText}>Send Reset Link</Text>
+              <Feather name="arrow-right" size={16} color={COLORS.resetBtnText} />
+            </TouchableOpacity>
+
           </View>
         </View>
+      </Modal>
 
-        <ScrollView
-          contentContainerStyle={styles.scrollContainer}
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
-        >
-          {/* Welcome Text */}
-          <View style={styles.welcomeTextContainer}>
-            <Text style={styles.title}>Welcome Back</Text>
-            <Text style={styles.subtitle}>
-              Access your student assistance portal
-            </Text>
-          </View>
-
-          {/* Role Selection Cards */}
-          <View style={styles.rolesContainer}>
-            {/* Student Assistant Card */}
-            <TouchableOpacity 
-              style={[styles.roleCard, selectedRole === 'student' && styles.roleCardActive]}
-              onPress={() => setSelectedRole('student')}
-              activeOpacity={0.8}
-            >
-              <View style={[styles.roleIconContainer, { backgroundColor: '#DBEAFE' }]}>
-                <Ionicons name="person-outline" size={24} color="#2563EB" />
-              </View>
-              <View style={styles.roleTextContainer}>
-                <Text style={styles.roleTitle}>Student Assistant</Text>
-                <Text style={styles.roleDesc}>Log your absences & view shifts</Text>
-              </View>
-            </TouchableOpacity>
-
-            {/* Supervisor Card */}
-            <TouchableOpacity 
-              style={[styles.roleCard, selectedRole === 'supervisor' && styles.roleCardActive]}
-              onPress={() => setSelectedRole('supervisor')}
-              activeOpacity={0.8}
-            >
-              <View style={[styles.roleIconContainer, { backgroundColor: '#EDE9FE' }]}>
-                <Ionicons name="people-outline" size={24} color="#9333EA" />
-              </View>
-              <View style={styles.roleTextContainer}>
-                <Text style={styles.roleTitle}>Supervisor</Text>
-                <Text style={styles.roleDesc}>Review and approve requests</Text>
-              </View>
-            </TouchableOpacity>
-          </View>
-
-          {/* Form Section */}
-          <View style={styles.formContainer}>
-            
-            {/* Email Input */}
-            <Text style={styles.inputLabel}>
-              {selectedRole === 'student' ? 'Student Email' : 'Staff Email'}
-            </Text>
-            <View style={styles.inputWrapper}>
-              <Ionicons name="mail-outline" size={18} color="#9CA3AF" style={styles.inputIcon} />
-              <TextInput
-                style={styles.input}
-                placeholder="e.g. 12345678@tut.ac.za"
-                placeholderTextColor="#9CA3AF"
-                value={email}
-                onChangeText={setEmail}
-                keyboardType="email-address"
-                autoCapitalize="none"
-              />
-            </View>
-
-            {/* Password Input */}
-            <Text style={styles.inputLabel}>Password</Text>
-            <View style={styles.inputWrapper}>
-              <Ionicons name="lock-closed-outline" size={18} color="#9CA3AF" style={styles.inputIcon} />
-              <TextInput
-                style={styles.input}
-                placeholder="••••••••"
-                placeholderTextColor="#9CA3AF"
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry={!showPassword}
-              />
-              <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
-                <Ionicons
-                  name={showPassword ? 'eye-off-outline' : 'eye-outline'}
-                  size={20}
-                  color="#9CA3AF"
-                />
-              </TouchableOpacity>
-            </View>
-
-            {/* Remember Me & Forgot Password */}
-            <View style={styles.row}>
-              <TouchableOpacity
-                style={styles.checkboxRow}
-                onPress={() => setRememberMe(!rememberMe)}
-                activeOpacity={0.7}
-              >
-                <View style={[styles.checkbox, rememberMe && styles.checkboxChecked]}>
-                  {rememberMe && <Ionicons name="checkmark" size={14} color="#FFFFFF" />}
-                </View>
-                <Text style={styles.checkboxLabel}>Remember me</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity>
-                <Text style={styles.forgotPassword}>Forgot password?</Text>
-              </TouchableOpacity>
-            </View>
-
-            {/* Log In Button */}
-            <TouchableOpacity
-              style={styles.logInButton}
-              activeOpacity={0.8}
-              onPress={handleLogIn}
-            >
-              <Text style={styles.logInButtonText}>Log in</Text>
-            </TouchableOpacity>
-            
-            {/* Sign Up Link */}
-            <View style={styles.signUpContainer}>
-              <TouchableOpacity onPress={() => router.push('/signStud')}>
-                <Text style={styles.signUpText}>
-                  Don't have an account? <Text style={styles.signUpLink}>Sign up</Text>
-                </Text>
-              </TouchableOpacity>
-            </View>
-
-          </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
 
+// --- Styles ---
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: '#A0C1DD', 
+  container: { flex: 1 },
+  backgroundImage: { flex: 1, width: '100%', height: '100%' },
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(255, 255, 255, 0.85)',
   },
-  keyboardView: {
-    flex: 1,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 15,
-    backgroundColor: '#FFFFFF',
-  },
-  iconContainer: {
-    width: 45,
-    height: 45,
-    borderRadius: 8,
-    marginRight: 12,
-  },
-  headerTextContainer: {
-    justifyContent: 'center',
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#111827',
-  },
-  headerSubtitle: {
-    fontSize: 10,
-    fontWeight: '600',
-    color: 'red',
-    letterSpacing: 1,
-    marginTop: 2,
-  },
-  scrollContainer: {
+  scrollContent: {
     flexGrow: 1,
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 40,
-  },
-  welcomeTextContainer: {
-    alignItems: 'center',
-    marginBottom: 25,
-  },
-  title: {
-    fontSize: 26,
-    fontWeight: '800',
-    color: '#111827',
-    marginBottom: 8,
-  },
-  subtitle: {
-    fontSize: 14,
-    color: '#4B5563',
-    textAlign: 'center',
-  },
-  rolesContainer: {
-    marginBottom: 20,
-  },
-  roleCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    borderWidth: 2,
-    borderColor: 'transparent',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  roleCardActive: {
-    borderColor: '#2563EB', 
-  },
-  roleIconContainer: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 14,
-  },
-  roleTextContainer: {
-    flex: 1,
-  },
-  roleTitle: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#111827',
-    marginBottom: 2,
-  },
-  roleDesc: {
-    fontSize: 12,
-    color: '#6B7280',
-  },
-  formContainer: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
     padding: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
+    justifyContent: 'space-between',
   },
-  inputLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#374151',
-    marginBottom: 8,
-  },
-  inputWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    marginBottom: 20,
-    height: 50,
-    backgroundColor: '#F9FAFB', 
-  },
-  inputIcon: {
-    marginRight: 10,
-  },
-  input: {
-    flex: 1,
-    fontSize: 14,
-    color: '#111827',
-  },
-  row: {
+  
+  // Header
+  header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: 32,
   },
-  checkboxRow: {
+  logoContainer: { flexDirection: 'row', alignItems: 'center' },
+  logoTextContainer: { marginLeft: 8 },
+  logoTitle: { fontSize: 16, fontWeight: 'bold', color: COLORS.darkBlue },
+  logoSubtitle: { fontSize: 8, color: COLORS.textMuted, letterSpacing: 1 },
+  themeToggle: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFF', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 20, borderWidth: 1, borderColor: COLORS.border },
+  themeText: { fontSize: 10, color: COLORS.textMuted, marginLeft: 4 },
+
+  // Main Content
+  mainContent: { flex: 1, justifyContent: 'center' },
+  
+  // Welcome Section
+  welcomeSection: { marginBottom: 32 },
+  tag: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
+  tagDot: { color: COLORS.primary, fontSize: 10, marginRight: 6 },
+  tagText: { fontSize: 10, fontWeight: 'bold', color: COLORS.primary, letterSpacing: 1 },
+  welcomeTitle: { fontSize: 28, fontWeight: 'bold', color: COLORS.darkBlue, fontFamily: 'serif', marginBottom: 12, lineHeight: 34 },
+  welcomeSubtitle: { fontSize: 13, color: COLORS.textMuted, lineHeight: 20, marginBottom: 16 },
+  securityNote: { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
+  securityText: { fontSize: 11, color: COLORS.textMuted, flex: 1, lineHeight: 16 },
+
+  // Login Card
+  card: {
+    backgroundColor: COLORS.card,
+    borderRadius: 16,
+    padding: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 5,
+  },
+  cardTag: { fontSize: 10, fontWeight: 'bold', color: COLORS.primary, letterSpacing: 1, marginBottom: 6 },
+  cardTitle: { fontSize: 22, fontWeight: 'bold', color: COLORS.darkBlue, fontFamily: 'serif', marginBottom: 4 },
+  cardSubtitle: { fontSize: 13, color: COLORS.textMuted, marginBottom: 20 },
+
+  // Toggle
+  toggleContainer: { flexDirection: 'row', backgroundColor: COLORS.toggleBg, borderRadius: 8, padding: 4, marginBottom: 20 },
+  toggleButton: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 8, borderRadius: 6, gap: 6 },
+  toggleButtonActive: { backgroundColor: '#FFF', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 2, elevation: 2 },
+  toggleText: { fontSize: 12, fontWeight: '600', color: COLORS.textMuted },
+  toggleTextActive: { color: COLORS.primary },
+
+  // Inputs
+  inputGroup: { marginBottom: 16 },
+  label: { fontSize: 12, fontWeight: 'bold', color: COLORS.textMain, marginBottom: 6 },
+  required: { color: '#EF4444' },
+  inputWrapper: { flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.inputBg, borderWidth: 1, borderColor: COLORS.border, borderRadius: 8, paddingHorizontal: 12 },
+  inputIcon: { marginRight: 8 },
+  input: { flex: 1, paddingVertical: 12, fontSize: 14, color: COLORS.textMain },
+  eyeIcon: { padding: 4 },
+
+  // Options
+  optionsRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 },
+  checkboxContainer: { flexDirection: 'row', alignItems: 'center' },
+  checkbox: { width: 16, height: 16, borderRadius: 4, borderWidth: 1, borderColor: COLORS.textMuted, justifyContent: 'center', alignItems: 'center', marginRight: 8 },
+  checkboxChecked: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
+  checkboxText: { fontSize: 12, color: COLORS.textMuted },
+  forgotPassword: { fontSize: 12, color: COLORS.primary, fontWeight: '600' },
+
+  // Button
+  primaryButton: { backgroundColor: COLORS.primary, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', paddingVertical: 14, borderRadius: 8, gap: 8, marginBottom: 20 },
+  primaryButtonText: { color: '#FFF', fontSize: 14, fontWeight: 'bold' },
+
+  // Card Footer
+  cardFooter: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center' },
+  cardFooterText: { fontSize: 12, color: COLORS.textMuted },
+  registerLink: { fontSize: 12, color: COLORS.primary, fontWeight: 'bold' },
+
+  // Page Footer
+  pageFooter: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginTop: 32, flexWrap: 'wrap' },
+  footerText: { fontSize: 11, color: COLORS.textMuted },
+  footerLink: { fontSize: 11, color: COLORS.primary, fontWeight: '600' },
+
+  // --- MODAL STYLES ---
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: COLORS.modalOverlay,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  modalContainer: {
+    backgroundColor: COLORS.card,
+    borderRadius: 16,
+    padding: 24,
+    width: '100%',
+    maxWidth: 400,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 8,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: COLORS.textMain,
+    flex: 1,
+  },
+  closeButton: {
+    padding: 4,
+    marginLeft: 8,
+  },
+  modalDescription: {
+    fontSize: 13,
+    color: COLORS.textMuted,
+    lineHeight: 20,
+    marginBottom: 20,
+  },
+  modalInputGroup: {
+    marginBottom: 16,
+  },
+  modalLabel: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    color: COLORS.textMain,
+    marginBottom: 6,
+  },
+  modalInputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
+    backgroundColor: COLORS.inputBg,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: 8,
+    paddingHorizontal: 12,
   },
-  checkbox: {
-    width: 18,
-    height: 18,
-    borderWidth: 1.5,
-    borderColor: '#9CA3AF',
-    borderRadius: 4,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 8,
-  },
-  checkboxChecked: {
-    backgroundColor: '#2563EB',
-    borderColor: '#2563EB',
-  },
-  checkboxLabel: {
-    fontSize: 13,
-    color: '#4B5563',
-  },
-  forgotPassword: {
-    fontSize: 13,
-    color: '#2563EB',
-    fontWeight: '700',
-  },
-  logInButton: {
-    backgroundColor: '#2563EB',
-    borderRadius: 10,
-    paddingVertical: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  logInButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  // --- NEW STYLES FOR SIGN UP SECTION ---
-  signUpContainer: {
-    marginTop: 24,
-    alignItems: 'center',
-  },
-  signUpText: {
+  modalInput: {
+    flex: 1,
+    paddingVertical: 12,
     fontSize: 14,
-    color: '#4B5563',
+    color: COLORS.textMain,
   },
-  signUpLink: {
-    color: '#2563EB',
-    fontWeight: '700',
+  modalSubmitButton: {
+    backgroundColor: COLORS.resetBtnBg,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 14,
+    borderRadius: 8,
+    gap: 8,
+    marginTop: 8,
+  },
+  modalSubmitText: {
+    color: COLORS.resetBtnText,
+    fontSize: 14,
+    fontWeight: 'bold',
   },
 });
