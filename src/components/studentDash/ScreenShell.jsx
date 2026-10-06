@@ -77,7 +77,7 @@ export default function ScreenShell({ active, pill, title, subtitle, back, heade
             <Image source={logoSource} style={styles.logo} resizeMode="contain" />
             <View style={{ marginLeft: 12, flexShrink: 1 }}>
               <Text style={[styles.brandTitle, { color: c.text }]} numberOfLines={1}>
-                StudentAssistance
+                Student Assistant
               </Text>
               <Text style={[styles.brandSub, { color: c.muted }]} numberOfLines={1}>
                 ABSENCE TRACKER
@@ -111,7 +111,9 @@ export default function ScreenShell({ active, pill, title, subtitle, back, heade
           </Pressable>
           <View style={{ alignItems: 'flex-end' }}>
             <Text style={[styles.userName, { color: c.text }]}>{USER.name}</Text>
-            <Text style={[styles.userRole, { color: c.muted }]}>{USER.role}</Text>
+            <Text style={[styles.userRole, { color: c.muted }]}>
+              {USER.role === 'Student Assist' ? 'Student Assistant' : USER.role}
+            </Text>
           </View>
         </View>
       </View>
