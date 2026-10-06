@@ -16,6 +16,7 @@ import {
 } from 'react-native';
 
 import logoImg from "@/assets/images/logo.png";
+import { ROUTES } from '../constants/studTheme';
 
 export default function LogInScreen() {
   const router = useRouter();
@@ -31,7 +32,7 @@ export default function LogInScreen() {
   const handleLogIn = () => {
     // Directly navigate based on the selected role
     if (selectedRole === 'student') {
-      router.replace('/studentDash'); 
+      router.replace(ROUTES.dashboard);
     } else if (selectedRole === 'supervisor') {
       router.replace('/supervisorDash'); 
     } else {
