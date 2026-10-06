@@ -18,29 +18,10 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import logoImg from "@/assets/images/logo.png";
+import { calendarData } from '../data/mockData';
 
-// Combined list of assistants
-const assistants = [
-  { id: 1, name: 'Nkululeko Buthelezi', initials: 'NN', role: 'Student Assistant', status: 'ACTIVE', color: '#A78BFA' },
-  { id: 2, name: 'Mnguni Sibekezelo', initials: 'SS', role: 'Student Assistant', status: 'ACTIVE', color: '#A78BFA' },
-  { id: 3, name: 'Judith Zondo', initials: 'JD', role: 'Student Assistant', status: 'PENDING', color: '#A78BFA' },
-];
-
-// Initial dummy data for shifts per day
-const initialShiftRecords = {
-  '2026-08-05': [
-    { id: 1, assistant: 'Nkululeko Buthelezi', initials: 'NN', position: 'Icenter', time: '08:00 - 12:00', hours: '4h', color: '#A78BFA' },
-    { id: 2, assistant: 'Mnguni Sibekezelo', initials: 'SS', position: 'Help desk', time: '12:00 - 16:00', hours: '4h', color: '#A78BFA' },
-    { id: 3, assistant: 'Judith Zondo', initials: 'JD', position: 'Icenter', time: '16:00 - 18:00', hours: '2h', color: '#A78BFA' },
-  ],
-  '2026-08-06': [
-    { id: 1, assistant: 'Nkululeko Buthelezi', initials: 'NN', position: 'Icenter', time: '09:00 - 13:00', hours: '4h', color: '#A78BFA' },
-  ],
-  '2026-08-07': [
-    { id: 1, assistant: 'Nkululeko Buthelezi', initials: 'NN', position: 'Icenter', time: '10:00 - 14:00', hours: '4h', color: '#A78BFA' },
-    { id: 2, assistant: 'Mnguni Sibekezelo', initials: 'SS', position: 'Icenter', time: '14:00 - 18:00', hours: '4h', color: '#A78BFA' },
-  ],
-};
+const assistants = calendarData.assistants;
+const initialShiftRecords = calendarData.initialShiftRecords;
 
 // =====================================================
 // ✅ DYNAMIC SOUTH AFRICAN HOLIDAYS FOR ANY YEAR
@@ -122,13 +103,10 @@ const formatDate = (date) => {
   return `${month} ${day}, ${year}`;
 };
 
-const MONTH_NAMES = [
-  "January", "February", "March", "April", "May", "June",
-  "July", "August", "September", "October", "November", "December"
-];
+const MONTH_NAMES = calendarData.monthNames;
 
 // The current date — drives the Details Card
-const TODAY = new Date(2026, 7, 9); // August 9, 2026
+const TODAY = calendarData.today;
 
 // =====================================================
 // CUSTOM DATE PICKER COMPONENT

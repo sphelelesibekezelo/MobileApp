@@ -3,7 +3,6 @@
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import {
-  Dimensions,
   Image,
   SafeAreaView,
   ScrollView,
@@ -13,35 +12,12 @@ import {
   View,
 } from 'react-native';
 
-const { width } = Dimensions.get('window');
+import { studentDashboardData, studentProfile } from '../data/mockData';
 
 export default function HomeScreen() {
   const router = useRouter();
-
-  // Mock data for recent requests
-  const recentRequests = [
-    {
-      id: '1',
-      code: 'REQ-001',
-      type: 'Medical Leave',
-      status: 'Approved',
-      avatar: 'NM',
-    },
-    {
-      id: '2',
-      code: 'REQ-001',
-      type: 'Medical Leave',
-      status: 'Approved',
-      avatar: 'NM',
-    },
-    {
-      id: '3',
-      code: 'REQ-003',
-      type: 'Sick Leave',
-      status: 'Pending',
-      avatar: 'NM',
-    },
-  ];
+  const recentRequests = studentDashboardData.recentRequests;
+  const studentName = studentProfile.name;
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -100,7 +76,7 @@ export default function HomeScreen() {
             </View>
 
             <Text style={styles.heroTitle}>Welcome back,</Text>
-            <Text style={styles.heroTitle}>Nicholas</Text>
+            <Text style={styles.heroTitle}>{studentName.split(' ')[0]}</Text>
 
             <Text style={styles.heroSubtitle}>
               Manage leave requests and track student attendance metrics.

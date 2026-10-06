@@ -17,48 +17,10 @@ import {
   View,
 } from 'react-native';
 
-// ---------------------------------------------------------------------------
-// Mock data (replace with real data from your backend later)
-// ---------------------------------------------------------------------------
-const ABSENCE_CATEGORIES = [
-  {
-    id: 'dayoff',
-    title: 'Day-off Request',
-    subtitle: 'Standard scheduled time away',
-    icon: 'calendar-outline',
-    color: '#2563EB',
-    bg: '#EEF2FF',
-  },
-  {
-    id: 'sick',
-    title: 'Sick Leave',
-    subtitle: 'Medical or health related absence',
-    icon: 'medkit-outline',
-    color: '#DC2626',
-    bg: '#FDEAEA',
-  },
-  {
-    id: 'exam',
-    title: 'Exam Leave',
-    subtitle: 'Absence for scheduled examinations',
-    icon: 'book-outline',
-    color: '#7C3AED',
-    bg: '#EDE9FE',
-  },
-  {
-    id: 'personal',
-    title: 'Personal Issues',
-    subtitle: 'Urgent family or personal matters',
-    icon: 'person-outline',
-    color: '#4B5563',
-    bg: '#F3F4F6',
-  },
-];
+import { studentProfile, studentRequestData } from '../data/mockData';
 
-const MY_SHIFTS = [
-  { id: 's1', tag: 'REGULAR SHIFT', date: 'Oct 15, 2026', time: '08:00 AM - 04:00 PM' },
-  { id: 's2', tag: 'EVENING COVERAGE', date: 'Oct 17, 2026', time: '10:00 AM - 06:00 PM' },
-];
+const ABSENCE_CATEGORIES = studentRequestData.absenceCategories;
+const MY_SHIFTS = studentRequestData.myShifts;
 
 const serifFont = Platform.select({ ios: 'Georgia', android: 'serif', default: 'serif' });
 
@@ -108,6 +70,7 @@ export default function StudentRequest() {
   const router = useRouter();
 
   const [activeTab, setActiveTab] = useState('leave'); // 'leave' | 'swap'
+  const studentName = studentProfile.name;
 
   // Leave request state
   const [category, setCategory] = useState('dayoff');
@@ -140,7 +103,7 @@ export default function StudentRequest() {
 
       const file = result.assets && result.assets[0];
       if (file) setAttachment({ name: file.name, uri: file.uri });
-    } catch (error) {
+    } catch (_error) {
       showNotice('error', 'Upload failed', 'Could not select the file. Please try again.');
     }
   };
@@ -258,7 +221,7 @@ export default function StudentRequest() {
       </View>
 
       <View style={styles.userRow}>
-        <Text style={styles.userName}>Nicholas Mathebula</Text>
+        <Text style={styles.userName}>{studentName}</Text>
       </View>
 
       <KeyboardAvoidingView

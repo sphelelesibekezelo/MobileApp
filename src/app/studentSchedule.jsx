@@ -3,11 +3,10 @@
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import * as DocumentPicker from 'expo-document-picker';
 import { useRouter } from 'expo-router';
-import { useMemo, useRef, useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
   Alert,
   Image,
-  PanResponder,
   SafeAreaView,
   ScrollView,
   StyleSheet,
@@ -16,19 +15,11 @@ import {
   View,
 } from 'react-native';
 
-// ---------------------------------------------------------------------------
-// Date helpers
-// ---------------------------------------------------------------------------
-const DAY_LABELS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+import { studentProfile, studentScheduleData } from '../data/mockData';
 
-const MONTH_NAMES = [
-  'January', 'February', 'March', 'April', 'May', 'June',
-  'July', 'August', 'September', 'October', 'November', 'December',
-];
-
-const WEEKDAY_NAMES = [
-  'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday',
-];
+const DAY_LABELS = studentScheduleData.dayLabels;
+const MONTH_NAMES = studentScheduleData.monthNames;
+const WEEKDAY_NAMES = studentScheduleData.weekdayNames;
 
 const startOfDay = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
 
@@ -46,24 +37,8 @@ const dateKey = (d) => `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
 const formatFullDate = (d) =>
   `${WEEKDAY_NAMES[d.getDay()]}, ${MONTH_NAMES[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
 
-// ---------------------------------------------------------------------------
-// Shift rules (mock data). Replace with real data from your backend later.
-// Keys are weekday numbers: 1 = Monday ... 5 = Friday. Weekends have no shift.
-// ---------------------------------------------------------------------------
-const SHIFT_RULES = {
-  1: { time: '09:00 AM – 12:30 PM', location: 'Central Library – Level 2', hours: '3.5h' },
-  2: { time: '09:00 AM – 12:30 PM', location: 'Central Library – Level 2', hours: '3.5h' },
-  3: { time: '10:00 AM – 01:00 PM', location: 'Central Library – Level 1', hours: '3h' },
-  4: { time: '09:00 AM – 12:30 PM', location: 'Central Library – Level 2', hours: '3.5h' },
-  5: { time: '08:00 AM – 11:00 AM', location: 'Central Library – Level 2', hours: '3h' },
-};
-
-const GUIDELINES = [
-  { id: 'g1', icon: 'time-outline', color: '#16A34A', text: 'Max 19 hours per week cumulative.' },
-  { id: 'g2', icon: 'shield-checkmark-outline', color: '#16A34A', text: 'Shifts must be under 4 hours per day.' },
-  { id: 'g3', icon: 'shirt-outline', color: '#16A34A', text: 'Wear your Student Assistant vest & ID.' },
-  { id: 'g4', icon: 'person-outline', color: '#F59E0B', text: 'Report to Lead Librarian at start.' },
-];
+const SHIFT_RULES = studentScheduleData.shiftRules;
+const GUIDELINES = studentScheduleData.guidelines;
 
 export default function StudentSchedule() {
   const router = useRouter();
@@ -92,7 +67,7 @@ export default function StudentSchedule() {
       if (file) {
         setTimetable({ name: file.name, size: file.size, uri: file.uri });
       }
-    } catch (error) {
+    } catch (_error) {
       Alert.alert('Upload failed', 'Could not select the file. Please try again.');
     }
   };
@@ -108,21 +83,6 @@ export default function StudentSchedule() {
   const shiftWeek = (direction) => {
     setSelectedDate((current) => addDays(current, direction * 7));
   };
-
-  // Swipe left/right on the week strip to move between weeks
-  const panResponder = useRef(
-    PanResponder.create({
-      onMoveShouldSetPanResponder: (_, g) =>
-        Math.abs(g.dx) > 12 && Math.abs(g.dx) > Math.abs(g.dy) * 1.5,
-      onPanResponderRelease: (_, g) => {
-        if (g.dx <= -40) {
-          setSelectedDate((current) => addDays(current, 7)); // swipe left -> next week
-        } else if (g.dx >= 40) {
-          setSelectedDate((current) => addDays(current, -7)); // swipe right -> previous week
-        }
-      },
-    })
-  ).current;
 
   // Build the 7 days shown in the strip
   const weekStart = startOfWeek(selectedDate);
@@ -177,7 +137,7 @@ export default function StudentSchedule() {
       </View>
 
       <View style={styles.userRow}>
-        <Text style={styles.userName}>Nicholas Mathebula</Text>
+        <Text style={styles.userName}>{studentProfile.name}</Text>
       </View>
 
       <ScrollView

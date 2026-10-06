@@ -15,61 +15,9 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import logoImg from "@/assets/images/logo.png";
+import { supervisorDashboardData } from '../data/mockData';
 
-// Initial review requests with full info
-const initialRequests = [
-  {
-    id: 1,
-    name: 'Nkululeko Buthelezi',
-    initials: 'NN',
-    studentId: '222301042',
-    email: 'nkululeko@tut4life.ac.za',
-    reason: 'Academic Commitment',
-    type: 'LEAVE',
-    date: '25 AUG 2026',
-    period: '25 Aug - 28 Aug 2026',
-    duration: '4 days',
-    color: '#E9D8FD',
-    avatarColor: '#8B5CF6',
-    description:
-      'Requesting leave for the upcoming academic commitment. I have an exam scheduled and a workshop that overlaps with my regular shift hours. Please approve to allow adequate preparation time.',
-    status: 'PENDING',
-  },
-  {
-    id: 2,
-    name: 'Sibekezelo Mnguni',
-    initials: 'SS',
-    studentId: '223301240',
-    email: '223301240@tut4life.ac.za',
-    reason: 'Exam Period',
-    type: 'SHIFT SWAP',
-    date: '20 AUG 2026',
-    period: '20 Aug - 21 Aug 2026',
-    duration: '1 days',
-    color: '#E9D8FD',
-    avatarColor: '#8B5CF6',
-    description:
-      'Requesting shift swap for the exam period. I have three consecutive exams and need the time to prepare. I have already found a colleague to cover my shifts.',
-    status: 'PENDING',
-  },
-  {
-    id: 3,
-    name: 'Judith Zondo',
-    initials: 'JD',
-    studentId: '242201240',
-    email: 'Judith@tut4life.ac.za',
-    reason: 'Medical Leave',
-    type: 'LEAVE',
-    date: '18 AUG 2026',
-    period: '18 Aug - 20 Aug 2026',
-    duration: '2 days',
-    color: '#E9D8FD',
-    avatarColor: '#8B5CF6',
-    description:
-      'Requesting medical leave due to a recent procedure. Medical certificate will be uploaded to the portal. I will keep my supervisor updated on my recovery status.',
-    status: 'PENDING',
-  },
-];
+const initialRequests = supervisorDashboardData.initialRequests;
 
 const StatCard = ({ title, value, iconName }) => (
   <View style={styles.statCard}>

@@ -11,6 +11,8 @@ import {
   View,
 } from 'react-native';
 
+import { studentNotificationsData } from '../data/mockData';
+
 const COLORS = {
   page: '#8FB2DA',
   white: '#FFFFFF',
@@ -32,71 +34,11 @@ const COLORS = {
   blue: '#3B6FE0',
 };
 
-/* -------------------------------------------------------------------------- */
-/* NOTIFICATION DATA                                                          */
-/* -------------------------------------------------------------------------- */
-
-const NOTIFICATIONS = [
-  {
-    id: 'n1',
-    date: '29 September 2026',
-    time: '9:30 AM',
-    title: 'Strike Alert',
-    message:
-      'Library services will be affected by a strike. Please check your scheduled shifts.',
-    icon: 'warning-outline',
-    iconColor: COLORS.warning,
-    iconBackground: COLORS.warningBg,
-  },
-
-  {
-    id: 'n2',
-    date: '29 September 2026',
-    time: '8:15 AM',
-    title: 'Leave Request Approved',
-    message:
-      'Your leave request for 7 October has been approved.',
-    icon: 'checkmark-circle-outline',
-    iconColor: COLORS.success,
-    iconBackground: COLORS.successBg,
-  },
-
-  {
-    id: 'n3',
-    date: '29 September 2026',
-    time: '7:45 AM',
-    title: 'Leave Request Rejected',
-    message:
-      'Your leave request for 10 October has been rejected. Please check the request details for more information.',
-    icon: 'close-circle-outline',
-    iconColor: COLORS.danger,
-    iconBackground: COLORS.dangerBg,
-  },
-
-  {
-    id: 'n4',
-    date: '28 September 2026',
-    time: '4:30 PM',
-    title: 'Shift Swap Approved',
-    message:
-      'Your shift swap request has been approved.',
-    icon: 'swap-horizontal-outline',
-    iconColor: COLORS.blue,
-    iconBackground: COLORS.blueBg,
-  },
-
-  {
-    id: 'n5',
-    date: '28 September 2026',
-    time: '2:10 PM',
-    title: 'Shift Swap Rejected',
-    message:
-      'Your shift swap request has been rejected. Please check the request details.',
-    icon: 'close-circle-outline',
-    iconColor: COLORS.danger,
-    iconBackground: COLORS.dangerBg,
-  },
-];
+const NOTIFICATIONS = studentNotificationsData.map((notification) => ({
+  ...notification,
+  iconColor: notification.iconColor || COLORS.warning,
+  iconBackground: notification.iconBackground || COLORS.warningBg,
+}));
 
 /* -------------------------------------------------------------------------- */
 /* SCREEN                                                                     */

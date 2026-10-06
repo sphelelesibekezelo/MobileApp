@@ -20,52 +20,10 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import logoImg from "@/assets/images/logo.png";
+import { reportData } from '../data/mockData';
 
-// ---------------- MONTHLY REPORT DATA ----------------
-const monthlyReportData = {
-  'Shoba Thabiso': {
-    studentId: 'ST-2024-001',
-    email: 'shoba.thabiso@university.edu',
-    months: [
-      { month: 'April 2026', hours: 22, requests: 1, approved: 1, rejected: 0, dayOffs: 0 },
-      { month: 'May 2026', hours: 24, requests: 0, approved: 0, rejected: 0, dayOffs: 0 },
-      { month: 'June 2026', hours: 18, requests: 2, approved: 1, rejected: 1, dayOffs: 0 },
-      { month: 'July 2026', hours: 26, requests: 1, approved: 0, rejected: 1, dayOffs: 0 },
-      { month: 'August 2026', hours: 20, requests: 1, approved: 1, rejected: 0, dayOffs: 1 },
-      { month: 'September 2026', hours: 24, requests: 0, approved: 0, rejected: 0, dayOffs: 0 },
-    ],
-  },
-  'Mabaso Kganya': {
-    studentId: 'MK-2024-015',
-    email: 'mabaso.kganya@university.edu',
-    months: [
-      { month: 'April 2026', hours: 15, requests: 2, approved: 1, rejected: 1, dayOffs: 1 },
-      { month: 'May 2026', hours: 28, requests: 0, approved: 0, rejected: 0, dayOffs: 0 },
-      { month: 'June 2026', hours: 20, requests: 1, approved: 0, rejected: 1, dayOffs: 0 },
-      { month: 'July 2026', hours: 22, requests: 2, approved: 2, rejected: 0, dayOffs: 1 },
-      { month: 'August 2026', hours: 23, requests: 3, approved: 2, rejected: 1, dayOffs: 0 },
-      { month: 'September 2026', hours: 18, requests: 0, approved: 0, rejected: 0, dayOffs: 0 },
-    ],
-  },
-  'Mawelela Sibusiso': {
-    studentId: 'MS-2024-032',
-    email: 'mawelela.sibusiso@university.edu',
-    months: [
-      { month: 'April 2026', hours: 20, requests: 1, approved: 1, rejected: 0, dayOffs: 0 },
-      { month: 'May 2026', hours: 22, requests: 0, approved: 0, rejected: 0, dayOffs: 0 },
-      { month: 'June 2026', hours: 21, requests: 1, approved: 1, rejected: 0, dayOffs: 0 },
-      { month: 'July 2026', hours: 19, requests: 2, approved: 1, rejected: 1, dayOffs: 1 },
-      { month: 'August 2026', hours: 19.2, requests: 3, approved: 2, rejected: 1, dayOffs: 0 },
-      { month: 'September 2026', hours: 24, requests: 0, approved: 0, rejected: 0, dayOffs: 0 },
-    ],
-  },
-};
-
-// Get all available months from the data for the selector
-const availableMonths = monthlyReportData['Shoba Thabiso'].months.map(m => m.month);
-
-// Available Leave Types for Filtering
-const LEAVE_TYPES = ['All', 'Sick Leave', 'Personal Issues', 'Exam Leave', 'Day Off', 'Shift Swap'];
+const { defaultStudent, monthlyReportData, leaveTypes: LEAVE_TYPES } = reportData;
+const availableMonths = monthlyReportData[defaultStudent].months.map((m) => m.month);
 
 // ---------------- Reusable Components ----------------
 const MetricCard = ({ icon, change, label, value, isPositive }) => (
@@ -172,45 +130,7 @@ export default function SupervisorReports() {
   const [isFilterModalVisible, setIsFilterModalVisible] = useState(false);
   const [selectedLeaveType, setSelectedLeaveType] = useState('All');
 
-  // Enhanced Staff Data with Leave Types
-  const staffData = [
-    {
-      id: 1,
-      name: 'Shoba Thabiso',
-      initials: 'ST',
-      role: 'STUDENT ASSISTANT',
-      hoursWorked: '20h',
-      totalRequests: '1',
-      days: '6',
-      status: 'Exceeding',
-      timeAgo: '2 hours ago',
-      leaveTypes: ['Sick Leave', 'Day Off'],
-    },
-    {
-      id: 2,
-      name: 'Mabaso Kganya',
-      initials: 'MK',
-      role: 'STUDENT ASSISTANT',
-      hoursWorked: '23h',
-      totalRequests: '3',
-      days: '5',
-      status: 'Needs Review',
-      timeAgo: '15 mins ago',
-      leaveTypes: ['Exam Leave', 'Shift Swap', 'Personal Issues'],
-    },
-    {
-      id: 3,
-      name: 'Mawelela Sibusiso',
-      initials: 'MS',
-      role: 'STUDENT ASSISTANT',
-      hoursWorked: '19.2h',
-      totalRequests: '3',
-      days: '6',
-      status: 'On Track',
-      timeAgo: '5 hours ago',
-      leaveTypes: ['Shift Swap', 'Day Off'],
-    },
-  ];
+  const staffData = reportData.staffData;
 
   // Filter Logic
   const filteredStaffData = selectedLeaveType === 'All'

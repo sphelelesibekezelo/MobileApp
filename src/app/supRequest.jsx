@@ -15,10 +15,10 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import logoImg from "@/assets/images/logo.png"; // Same logo path as supervisorDash.jsx
+import logoImg from "@/assets/images/logo.png";
+import { supervisorRequestData } from '../data/mockData';
 
-// Available Leave Types for Filtering
-const LEAVE_TYPES = ['All', 'Sick Leave', 'Personal Issues', 'Exam Leave', 'Day Off', 'Shift Swap'];
+const LEAVE_TYPES = supervisorRequestData.leaveTypes;
 
 // Reusable Submission Card Component
 const SubmissionCard = ({ item, onApprove, onReject }) => (
@@ -105,59 +105,8 @@ export default function SupervisorRequests() {
   const [isFilterModalVisible, setIsFilterModalVisible] = useState(false);
   const [selectedLeaveType, setSelectedLeaveType] = useState('All');
 
-  // Initial State for Submissions (Updated with specific leave types)
-  const [submissions, setSubmissions] = useState([
-    {
-      id: 1,
-      name: 'Nkululeko Buthelezi',
-      initials: 'NN',
-      avatarColor: '#A78BFA',
-      type: 'Shift Swap',
-      reason: 'Requesting to swap Friday Evening (6PM) shift with Saturday Morning (8AM) due to academic exam preparation.',
-      date: 'Oct 27 - Oct 28',
-      status: 'PENDING',
-    },
-    {
-      id: 2,
-      name: 'Judith Zondo',
-      initials: 'JD',
-      avatarColor: '#3B82F6',
-      type: 'Sick Leave',
-      reason: 'Medical certificate attached. Requesting sick leave for three days due to flu.',
-      date: 'Oct 30 - Nov 02',
-      status: 'PENDING',
-    },
-    {
-      id: 3,
-      name: 'Sibekezelo Mnguni',
-      initials: 'SS',
-      avatarColor: '#3B82F6',
-      type: 'Exam Leave',
-      reason: 'Requesting exam leave for upcoming final examinations. Timetable attached.',
-      date: 'Nov 05 - Nov 10',
-      status: 'PENDING',
-    },
-    {
-      id: 4,
-      name: 'Nkosi Nkosi',
-      initials: 'NK',
-      avatarColor: '#8B5CF6',
-      type: 'Personal Issues',
-      reason: 'Urgent family emergency requiring travel out of town.',
-      date: 'Nov 12 - Nov 15',
-      status: 'PENDING',
-    },
-    {
-      id: 5,
-      name: 'Thabo Mokoena',
-      initials: 'TM',
-      avatarColor: '#F59E0B',
-      type: 'Day Off',
-      reason: 'Requesting a standard day off for personal wellness.',
-      date: 'Nov 20',
-      status: 'PENDING',
-    },
-  ]);
+  // Initial State for Submissions
+  const [submissions, setSubmissions] = useState(supervisorRequestData.submissions);
 
   // Handle Approve/Reject Actions
   const handleAction = (id, newStatus) => {

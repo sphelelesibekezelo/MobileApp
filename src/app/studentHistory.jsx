@@ -12,22 +12,11 @@ import {
   View,
 } from 'react-native';
 
-// ---------------------------------------------------------------------------
-// Mock data (replace with real data from your backend later)
-// ---------------------------------------------------------------------------
-const STUDENT_NAME = 'Nicholas Mathebula';
+import { studentHistoryData, studentProfile } from '../data/mockData';
 
-const REQUESTS = [
-  { id: 'REQ-003', type: 'Exam Leave', status: 'Approved' },
-  { id: 'REQ-001', type: 'Sick Leave', status: 'Rejected' },
-  { id: 'REQ-002', type: 'Shift Swap – Simphiwe Masanabo', status: 'Approved' },
-];
-
-const STATUS_STYLES = {
-  Approved: { bg: '#DCFCE7', color: '#16A34A' },
-  Rejected: { bg: '#FEE2E2', color: '#DC2626' },
-  Pending: { bg: '#FEF3C7', color: '#D97706' },
-};
+const STUDENT_NAME = studentProfile.name;
+const REQUESTS = studentHistoryData.requests;
+const STATUS_STYLES = studentHistoryData.statusStyles;
 
 export default function StudentHistory() {
   const router = useRouter();

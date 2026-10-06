@@ -14,37 +14,9 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import logoImg from "@/assets/images/logo.png";
+import { supervisorNotificationsData } from '../data/mockData';
 
-// ---------------- UPDATED HARDCODED DATA (Matching the Screenshot) ----------------
-const initialNotifications = [
-  {
-    id: 1,
-    name: 'Nkululeko Buthelezi',
-    initials: 'NN',
-    avatarColor: '#A78BFA',
-    type: 'SHIFT SWAP',
-    reason: 'Requesting to swap Friday Evening (6PM) shift with Saturday Morning (8AM) due to academic exam preparation.',
-    date: 'Oct 27 - Oct 28',
-  },
-  {
-    id: 2,
-    name: 'Judith Zondo',
-    initials: 'JD',
-    avatarColor: '#3B82F6',
-    type: 'LEAVE',
-    reason: 'Emergency family leave requested for three days. Documents will be uploaded to the portal by end of week.',
-    date: 'Oct 30 - Nov 02',
-  },
-  {
-    id: 3,
-    name: 'Sibekezelo Mnguni',
-    initials: 'SS',
-    avatarColor: '#3B82F6',
-    type: 'LEAVE',
-    reason: 'Emergency family leave requested for three days. Documents will be uploaded to the portal by end of week.',
-    date: 'Oct 30 - Nov 02',
-  },
-];
+const initialNotifications = supervisorNotificationsData;
 
 // ---------------- COMPONENTS ----------------
 const NotificationCard = ({ item, onPress }) => (
