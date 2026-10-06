@@ -14,7 +14,6 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { USER } from '../../constants/studData';
 import {
-  LIBRARY_BG,
   LOGO_IMAGE,
   NAV_POSITION,
   ROUTES,
@@ -24,6 +23,10 @@ import {
 import StudentNavBar from './StudentNavBar';
 
 import logoImg from '@/assets/images/logo.png';
+
+// IMPORTANT: Save your provided image to `assets/images/library.jpg`
+// If you saved it with a different name, change 'library.jpg' below to match.
+const LIBRARY_BG = require('@/assets/images/library.jpg');
 
 /* Shared screen frame: top bar (logo, bell, logout, theme toggle),
    library background, page heading, scrolling body and the nav bar. */
@@ -127,7 +130,12 @@ export default function ScreenShell({ active, pill, title, subtitle, back, heade
       >
         <View style={styles.flex}>
           {LIBRARY_BG ? (
-            <ImageBackground source={LIBRARY_BG} style={styles.flex} resizeMode="cover">
+            <ImageBackground
+              source={LIBRARY_BG}
+              style={styles.flex}
+              resizeMode="cover"
+              imageStyle={{ opacity: 0.7 }} // <-- 70% opacity as requested
+            >
               <View style={[StyleSheet.absoluteFill, { backgroundColor: c.overlay }]} />
               {body}
             </ImageBackground>
