@@ -1,4 +1,5 @@
 import { Feather, Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import {
   ImageBackground,
@@ -30,6 +31,7 @@ const COLORS = {
 };
 
 export default function LoginScreen() {
+  const router = useRouter();
   const [accountType, setAccountType] = useState('student');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -40,6 +42,14 @@ export default function LoginScreen() {
   const [isForgotModalVisible, setIsForgotModalVisible] = useState(false);
   const [staffNo, setStaffNo] = useState('');
   const [resetEmail, setResetEmail] = useState('');
+
+  const handleLogIn = () => {
+    if (accountType === 'student') {
+      router.replace('/studDash');
+    } else if (accountType === 'supervisor') {
+      router.replace('/supervisorDash');
+    }
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -173,7 +183,7 @@ export default function LoginScreen() {
               </View>
 
               {/* Submit Button */}
-              <TouchableOpacity style={styles.primaryButton}>
+              <TouchableOpacity style={styles.primaryButton} onPress={handleLogIn}>
                 <Text style={styles.primaryButtonText}>
                   Sign in as {accountType === 'student' ? 'student' : 'supervisor'}
                 </Text>
