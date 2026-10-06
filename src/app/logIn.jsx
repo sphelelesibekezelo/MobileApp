@@ -31,7 +31,7 @@ export default function LogInScreen() {
   const handleLogIn = () => {
     // Directly navigate based on the selected role
     if (selectedRole === 'student') {
-      router.replace('/studentDash'); 
+      router.replace('/studDash');
     } else if (selectedRole === 'supervisor') {
       router.replace('/supervisorDash'); 
     } else {
