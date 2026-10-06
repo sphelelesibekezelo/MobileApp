@@ -11,6 +11,8 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import lib from "@/assets/images/Icenter.png";
+import logoImg from "@/assets/images/logo.png";
 
 // --- Theme Colors ---
 const COLORS = {
@@ -39,9 +41,12 @@ export default function LandingPage() {
         {/* --- HEADER --- */}
         <View style={[styles.header, isDarkMode && styles.headerDark]}>
           <View style={styles.logoContainer}>
-            <View style={styles.logoIcon}>
-              <Text style={styles.logoIconText}>iC</Text>
-            </View>
+            {/* REPLACED: Now using the imported logoImg */}
+            <Image 
+              source={logoImg} 
+              style={styles.logoImage} 
+              resizeMode="contain" 
+            />
             <View>
               <Text style={[styles.logoText, isDarkMode && styles.textDark]}>iCenter</Text>
               <Text style={styles.logoSubtext}>ABSENCE AND LEAVE TRACKER</Text>
@@ -75,9 +80,9 @@ export default function LandingPage() {
             </TouchableOpacity>
           </View>
 
-          {/* Hero Image Placeholder */}
+          {/* REPLACED: Now using the imported lib image */}
           <Image
-            source={{ uri: 'https://images.unsplash.com/photo-1531482615713-2afd69097998?q=80&w=1470&auto=format&fit=crop' }}
+            source={lib}
             style={styles.heroImage}
             resizeMode="cover"
           />
@@ -314,11 +319,15 @@ const styles = StyleSheet.create({
   },
   headerDark: { backgroundColor: '#1F2937', borderBottomColor: '#374151' },
   logoContainer: { flexDirection: 'row', alignItems: 'center' },
-  logoIcon: {
-    width: 32, height: 32, borderRadius: 8, backgroundColor: '#F59E0B',
-    justifyContent: 'center', alignItems: 'center', marginRight: 8,
+  
+  // NEW: Style for the logo image
+  logoImage: {
+    width: 32,
+    height: 32,
+    marginRight: 8,
+    borderRadius: 8,
   },
-  logoIconText: { color: '#FFF', fontWeight: 'bold', fontSize: 12 },
+  
   logoText: { fontSize: 16, fontWeight: 'bold', color: COLORS.primary },
   logoSubtext: { fontSize: 8, color: COLORS.textMuted, letterSpacing: 1 },
   themeToggle: { flexDirection: 'row', alignItems: 'center' },
