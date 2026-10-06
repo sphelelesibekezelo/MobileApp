@@ -1,5 +1,5 @@
-import { Feather } from '@expo/vector-icons';
-import { useState } from 'react';
+import { Feather, Ionicons } from '@expo/vector-icons';
+import { usePathname, useRouter } from 'expo-router';
 import {
   ImageBackground,
   SafeAreaView,
@@ -10,6 +10,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 // --- Theme Colors ---
 const COLORS = {
@@ -45,23 +46,34 @@ const calendarDays = [
   { day: '29', current: true }, { day: '30', current: true }, { day: '31', current: true },
 ];
 
+// --- Bottom Nav Items (Mapped to Pages) ---
+const NAV_ITEMS = [
+  { name: 'Dashboard',   icon: 'grid-outline',          path: '/supervisorDash' },
+  { name: 'Calendar',    icon: 'calendar-outline',      path: '/supCal'         },
+  { name: 'Requests',    icon: 'document-text-outline', path: '/supRequest', badge: 1 },
+  { name: 'Assistances', icon: 'people-outline',        path: '/supAssistants'  },
+  { name: 'Reports',     icon: 'bar-chart-outline',     path: '/supReport'      },
+];
+
 export default function MasterSchedule() {
-  const [activeTab, setActiveTab] = useState('Calendar');
+  const router = useRouter();
+  const pathname = usePathname();
+  const insets = useSafeAreaInsets();
 
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" />
-      
+
       {/* Background Image with 70% White Overlay */}
-      <ImageBackground 
-        source={{ uri: 'https://images.unsplash.com/photo-1507842217343-583bb7270b66?q=80&w=1590&auto=format&fit=crop' }} 
+      <ImageBackground
+        source={{ uri: 'https://images.unsplash.com/photo-1507842217343-583bb7270b66?q=80&w=1590&auto=format&fit=crop' }}
         style={styles.backgroundImage}
         resizeMode="cover"
       >
         <View style={styles.overlay} />
 
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-          
+
           {/* --- HEADER --- */}
           <View style={styles.header}>
             <TouchableOpacity style={styles.themeToggle}>
@@ -97,8 +109,8 @@ export default function MasterSchedule() {
               </View>
             </View>
             <Text style={styles.pageSubtitle}>
-            {"Manage every student assistant's shifts from a single monthly view. Each student has a unique color."}
-          </Text>
+              {"Manage every student assistant's shifts from a single monthly view. Each student has a unique color."}
+            </Text>
           </View>
 
           {/* --- STATS ROW --- */}
@@ -193,12 +205,12 @@ export default function MasterSchedule() {
             <View style={styles.panelCard}>
               <Text style={styles.panelDate}>6 October 2026</Text>
               <Text style={styles.panelSubtitle}>0 shifts scheduled</Text>
-              
+
               <TouchableOpacity style={styles.closureButton}>
                 <Feather name="bell" size={14} color={COLORS.danger} />
                 <Text style={styles.closureButtonText}>Declare institutional closure</Text>
               </TouchableOpacity>
-              
+
               <View style={styles.noShiftsBox}>
                 <Text style={styles.noShiftsText}>No shifts scheduled for this date.</Text>
               </View>
@@ -235,34 +247,40 @@ export default function MasterSchedule() {
         </ScrollView>
 
         {/* --- BOTTOM NAVIGATION BAR --- */}
-        <View style={styles.bottomNav}>
-          {[
-            { name: 'Dashboard', icon: 'grid' },
-            { name: 'Calendar', icon: 'calendar' },
-            { name: 'Requests', icon: 'file-text' },
-            { name: 'Assistances', icon: 'users' },
-            { name: 'Reports', icon: 'bar-chart-2' },
-          ].map((item) => (
-            <TouchableOpacity
-              key={item.name}
-              style={styles.navItem}
-              onPress={() => setActiveTab(item.name)}
-            >
-              <Feather
-                name={item.icon}
-                size={20}
-                color={activeTab === item.name ? COLORS.primary : COLORS.textMuted}
-              />
-              <Text
-                style={[
-                  styles.navText,
-                  activeTab === item.name && styles.navTextActive,
-                ]}
+        <View
+          style={[
+            styles.bottomNav,
+            { paddingBottom: insets.bottom > 0 ? insets.bottom : 20 },
+          ]}
+        >
+          {NAV_ITEMS.map((item) => {
+            const isActive = pathname === item.path;
+
+            return (
+              <TouchableOpacity
+                key={item.name}
+                style={styles.navItem}
+                activeOpacity={0.7}
+                onPress={() => router.push(item.path)}
               >
-                {item.name}
-              </Text>
-            </TouchableOpacity>
-          ))}
+                <View style={styles.navIconContainer}>
+                  <Ionicons
+                    name={item.icon}
+                    size={22}
+                    color={isActive ? COLORS.primary : '#A0AEC0'}
+                  />
+                  {item.badge ? (
+                    <View style={styles.navBadge}>
+                      <Text style={styles.navBadgeText}>{item.badge}</Text>
+                    </View>
+                  ) : null}
+                </View>
+                <Text style={[styles.navText, isActive && styles.navTextActive]}>
+                  {item.name}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
         </View>
       </ImageBackground>
     </SafeAreaView>
@@ -275,7 +293,7 @@ const styles = StyleSheet.create({
   backgroundImage: { flex: 1, width: '100%', height: '100%' },
   overlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(255, 255, 255, 0.7)', // 70% white overlay to fade the background image
+    backgroundColor: 'rgba(255, 255, 255, 0.7)',
   },
   scrollContent: { padding: 16 },
 
@@ -305,21 +323,21 @@ const styles = StyleSheet.create({
   actionButtons: { flexDirection: 'row' },
   refreshButton: {
     backgroundColor: '#FFF', borderWidth: 1, borderColor: COLORS.border,
-    padding: 8, borderRadius: 6, marginRight: 8, // Replaced gap
+    padding: 8, borderRadius: 6, marginRight: 8,
   },
   newShiftButton: {
     backgroundColor: COLORS.primary, flexDirection: 'row', alignItems: 'center',
     paddingHorizontal: 12, paddingVertical: 8, borderRadius: 6,
   },
-  newShiftText: { color: '#FFF', fontSize: 12, fontWeight: 'bold', marginLeft: 4 }, // Replaced gap
+  newShiftText: { color: '#FFF', fontSize: 12, fontWeight: 'bold', marginLeft: 4 },
   pageSubtitle: { fontSize: 13, color: COLORS.textMuted, lineHeight: 18 },
 
   // Stats Row
-  statsRow: { flexDirection: 'row', marginBottom: 16, justifyContent: 'space-between' }, // Replaced gap with space-between
+  statsRow: { flexDirection: 'row', marginBottom: 16, justifyContent: 'space-between' },
   statCard: {
     flex: 1, backgroundColor: COLORS.card, padding: 12, borderRadius: 8,
     borderWidth: 1, borderColor: COLORS.border, flexDirection: 'row', alignItems: 'center',
-    marginHorizontal: 4, // Added spacing
+    marginHorizontal: 4,
   },
   statIndicator: { width: 4, height: 24, borderRadius: 2, marginRight: 8 },
   statLabel: { fontSize: 8, fontWeight: 'bold', color: COLORS.textMuted, letterSpacing: 0.5 },
@@ -345,7 +363,7 @@ const styles = StyleSheet.create({
   },
   todayBtn: {
     backgroundColor: '#FFF', borderWidth: 1, borderColor: COLORS.border,
-    paddingHorizontal: 8, paddingVertical: 6, borderRadius: 4, marginHorizontal: 4, // Replaced gap
+    paddingHorizontal: 8, paddingVertical: 6, borderRadius: 4, marginHorizontal: 4,
   },
   todayBtnText: { fontSize: 10, fontWeight: 'bold', color: COLORS.textMain },
 
@@ -368,17 +386,17 @@ const styles = StyleSheet.create({
   legendContainer: { marginTop: 8, paddingTop: 12, borderTopWidth: 1, borderTopColor: COLORS.border },
   legendTitle: { fontSize: 10, fontWeight: 'bold', color: COLORS.textMain, marginBottom: 8 },
   legendRow: { flexDirection: 'row', flexWrap: 'wrap', marginBottom: 8 },
-  legendItem: { flexDirection: 'row', alignItems: 'center', marginRight: 12 }, // Replaced gap
-  legendDot: { width: 6, height: 6, borderRadius: 3, marginRight: 4 }, // Replaced gap
+  legendItem: { flexDirection: 'row', alignItems: 'center', marginRight: 12 },
+  legendDot: { width: 6, height: 6, borderRadius: 3, marginRight: 4 },
   legendText: { fontSize: 10, color: COLORS.textMuted },
   legendDescRow: { flexDirection: 'row', flexWrap: 'wrap' },
-  legendDesc: { fontSize: 9, color: COLORS.textMuted, marginRight: 8, marginBottom: 4 }, // Replaced gap
+  legendDesc: { fontSize: 9, color: COLORS.textMuted, marginRight: 8, marginBottom: 4 },
 
   // Side Panel (Stacked Cards)
   sidePanel: { marginBottom: 16 },
   panelCard: {
     backgroundColor: COLORS.card, borderRadius: 12, padding: 16,
-    borderWidth: 1, borderColor: COLORS.border, marginBottom: 16, // Replaced gap
+    borderWidth: 1, borderColor: COLORS.border, marginBottom: 16,
     shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 2,
   },
   panelDate: { fontSize: 18, fontWeight: 'bold', color: COLORS.darkBlue, marginBottom: 4 },
@@ -388,7 +406,7 @@ const styles = StyleSheet.create({
     borderWidth: 1, borderColor: COLORS.danger, borderRadius: 6,
     paddingVertical: 8, marginBottom: 12,
   },
-  closureButtonText: { color: COLORS.danger, fontSize: 12, fontWeight: 'bold', marginLeft: 6 }, // Replaced gap
+  closureButtonText: { color: COLORS.danger, fontSize: 12, fontWeight: 'bold', marginLeft: 6 },
   noShiftsBox: {
     backgroundColor: '#F9FAFB', padding: 16, borderRadius: 8,
     alignItems: 'center', justifyContent: 'center',
@@ -398,7 +416,7 @@ const styles = StyleSheet.create({
   // Tips Card
   tipsCard: { backgroundColor: '#F0FDF4', borderColor: '#DCFCE7' },
   panelHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
-  panelTitle: { fontSize: 14, fontWeight: 'bold', color: COLORS.textMain, marginLeft: 8 }, // Replaced gap
+  panelTitle: { fontSize: 14, fontWeight: 'bold', color: COLORS.textMain, marginLeft: 8 },
   tipText: { fontSize: 12, color: COLORS.textMuted, marginBottom: 4, lineHeight: 16 },
 
   // View Timetable Card
@@ -416,14 +434,47 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.card,
     borderTopWidth: 1,
     borderTopColor: COLORS.border,
-    paddingVertical: 10,
-    paddingBottom: 20,
+    paddingTop: 10,
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
   },
-  navItem: { alignItems: 'center', justifyContent: 'center', padding: 4 },
-  navText: { fontSize: 10, color: COLORS.textMuted, marginTop: 4 },
-  navTextActive: { color: COLORS.primary, fontWeight: 'bold' },
+  navItem: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 4,
+    minWidth: 55,
+  },
+  navIconContainer: {
+    position: 'relative',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  navBadge: {
+    position: 'absolute',
+    top: -4,
+    right: -8,
+    backgroundColor: COLORS.danger,
+    borderRadius: 8,
+    minWidth: 16,
+    height: 16,
+    paddingHorizontal: 3,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  navBadgeText: {
+    color: '#FFF',
+    fontSize: 9,
+    fontWeight: 'bold',
+  },
+  navText: {
+    fontSize: 10,
+    color: COLORS.textMuted,
+    marginTop: 4,
+  },
+  navTextActive: {
+    color: COLORS.primary,
+    fontWeight: 'bold',
+  },
 });

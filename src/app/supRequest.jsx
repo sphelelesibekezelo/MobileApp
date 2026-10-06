@@ -1,5 +1,5 @@
-import { Feather } from '@expo/vector-icons';
-import { useState } from 'react';
+import { Feather, Ionicons } from '@expo/vector-icons';
+import { usePathname, useRouter } from 'expo-router';
 import {
   ImageBackground,
   SafeAreaView,
@@ -11,6 +11,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 // --- Theme Colors ---
 const COLORS = {
@@ -31,23 +32,34 @@ const COLORS = {
   avatarText: '#4F46E5',
 };
 
+// --- Bottom Nav Items (Mapped to Pages) ---
+const NAV_ITEMS = [
+  { name: 'Dashboard',   icon: 'grid-outline',          path: '/supervisorDash' },
+  { name: 'Calendar',    icon: 'calendar-outline',      path: '/supCal'         },
+  { name: 'Requests',    icon: 'document-text-outline', path: '/supRequest', badge: 1 },
+  { name: 'Assistances', icon: 'people-outline',        path: '/supAssistants'  },
+  { name: 'Reports',     icon: 'bar-chart-outline',     path: '/supReport'      },
+];
+
 export default function OperationalRequests() {
-  const [activeTab, setActiveTab] = useState('Requests');
+  const router = useRouter();
+  const pathname = usePathname();
+  const insets = useSafeAreaInsets();
 
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" />
-      
+
       {/* Background Image with 70% White Overlay */}
-      <ImageBackground 
-        source={{ uri: 'https://images.unsplash.com/photo-1507842217343-583bb7270b66?q=80&w=1590&auto=format&fit=crop' }} 
+      <ImageBackground
+        source={{ uri: 'https://images.unsplash.com/photo-1507842217343-583bb7270b66?q=80&w=1590&auto=format&fit=crop' }}
         style={styles.backgroundImage}
         resizeMode="cover"
       >
         <View style={styles.overlay} />
 
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-          
+
           {/* --- HEADER --- */}
           <View style={styles.header}>
             <TouchableOpacity style={styles.themeToggle}>
@@ -122,10 +134,10 @@ export default function OperationalRequests() {
             </TouchableOpacity>
           </View>
 
-          {/* --- REQUEST CARD (Table Row converted to Card) --- */}
+          {/* --- REQUEST CARD --- */}
           <View style={styles.requestCard}>
-            
-            {/* Card Header: Avatar, Name, Type */}
+
+            {/* Card Header */}
             <View style={styles.requestHeader}>
               <View style={styles.requestUserInfo}>
                 <View style={styles.avatarRequest}>
@@ -138,22 +150,22 @@ export default function OperationalRequests() {
               </View>
             </View>
 
-            {/* Card Body: Details */}
+            {/* Card Body */}
             <View style={styles.requestBody}>
               <Text style={styles.requestQuote}>{"I miss my family"}</Text>
-              
+
               <View style={styles.requestMetaRow}>
                 <Feather name="calendar" size={12} color={COLORS.textMuted} />
                 <Text style={styles.requestMetaText}>Oct 12, 2026 – Oct 13, 2026</Text>
               </View>
-              
+
               <View style={styles.requestMetaRow}>
                 <Feather name="clock" size={12} color={COLORS.textMuted} />
                 <Text style={styles.requestMetaText}>Filed recently</Text>
               </View>
             </View>
 
-            {/* Card Footer: Status & Actions */}
+            {/* Card Footer */}
             <View style={styles.requestFooter}>
               <View style={styles.pendingBadge}>
                 <Text style={styles.pendingText}>Pending</Text>
@@ -177,34 +189,40 @@ export default function OperationalRequests() {
         </ScrollView>
 
         {/* --- BOTTOM NAVIGATION BAR --- */}
-        <View style={styles.bottomNav}>
-          {[
-            { name: 'Dashboard', icon: 'grid' },
-            { name: 'Calendar', icon: 'calendar' },
-            { name: 'Requests', icon: 'file-text' },
-            { name: 'Assistances', icon: 'users' },
-            { name: 'Reports', icon: 'bar-chart-2' },
-          ].map((item) => (
-            <TouchableOpacity
-              key={item.name}
-              style={styles.navItem}
-              onPress={() => setActiveTab(item.name)}
-            >
-              <Feather
-                name={item.icon}
-                size={20}
-                color={activeTab === item.name ? COLORS.primary : COLORS.textMuted}
-              />
-              <Text
-                style={[
-                  styles.navText,
-                  activeTab === item.name && styles.navTextActive,
-                ]}
+        <View
+          style={[
+            styles.bottomNav,
+            { paddingBottom: insets.bottom > 0 ? insets.bottom : 20 },
+          ]}
+        >
+          {NAV_ITEMS.map((item) => {
+            const isActive = pathname === item.path;
+
+            return (
+              <TouchableOpacity
+                key={item.name}
+                style={styles.navItem}
+                activeOpacity={0.7}
+                onPress={() => router.push(item.path)}
               >
-                {item.name}
-              </Text>
-            </TouchableOpacity>
-          ))}
+                <View style={styles.navIconContainer}>
+                  <Ionicons
+                    name={item.icon}
+                    size={22}
+                    color={isActive ? COLORS.primary : '#A0AEC0'}
+                  />
+                  {item.badge ? (
+                    <View style={styles.navBadge}>
+                      <Text style={styles.navBadgeText}>{item.badge}</Text>
+                    </View>
+                  ) : null}
+                </View>
+                <Text style={[styles.navText, isActive && styles.navTextActive]}>
+                  {item.name}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
         </View>
       </ImageBackground>
     </SafeAreaView>
@@ -217,7 +235,7 @@ const styles = StyleSheet.create({
   backgroundImage: { flex: 1, width: '100%', height: '100%' },
   overlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(255, 255, 255, 0.7)', // 70% white overlay to fade the background image
+    backgroundColor: 'rgba(255, 255, 255, 0.7)',
   },
   scrollContent: { padding: 16 },
 
@@ -248,16 +266,16 @@ const styles = StyleSheet.create({
   pageSubtitle: { fontSize: 13, color: COLORS.textMuted, lineHeight: 18 },
 
   // Action Buttons
-  actionButtonsRow: { flexDirection: 'row', gap: 8, marginBottom: 16, flexWrap: 'wrap' },
+  actionButtonsRow: { flexDirection: 'row', marginBottom: 16, flexWrap: 'wrap' },
   actionButton: {
     flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFF',
     paddingHorizontal: 12, paddingVertical: 8, borderRadius: 6,
-    borderWidth: 1, borderColor: COLORS.border, gap: 6,
+    borderWidth: 1, borderColor: COLORS.border, marginRight: 8, marginBottom: 8,
   },
   actionButtonActive: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
   actionButtonText: { fontSize: 12, fontWeight: '600', color: COLORS.textMain },
   actionButtonTextActive: { fontSize: 12, fontWeight: '600', color: '#FFF' },
-  badgeDot: { backgroundColor: '#3B82F6', borderRadius: 10, paddingHorizontal: 6, paddingVertical: 2 },
+  badgeDot: { backgroundColor: '#3B82F6', borderRadius: 10, paddingHorizontal: 6, paddingVertical: 2, marginLeft: 6 },
   badgeDotText: { color: '#FFF', fontSize: 10, fontWeight: 'bold' },
 
   // Stat Card
@@ -275,19 +293,18 @@ const styles = StyleSheet.create({
   statValue: { fontSize: 24, fontWeight: 'bold', color: COLORS.darkBlue },
 
   // Search & Filter
-  searchFilterRow: { flexDirection: 'row', gap: 8, marginBottom: 16 },
+  searchFilterRow: { flexDirection: 'row', marginBottom: 16 },
   searchContainer: {
     flex: 1, flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFF',
-    borderWidth: 1, borderColor: COLORS.border, borderRadius: 8, paddingHorizontal: 12,
+    borderWidth: 1, borderColor: COLORS.border, borderRadius: 8, paddingHorizontal: 12, marginRight: 8,
   },
   searchIcon: { marginRight: 8 },
   searchInput: { flex: 1, paddingVertical: 10, fontSize: 13, color: COLORS.textMain },
   filterButton: {
     flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFF',
-    borderWidth: 1, borderColor: COLORS.border, borderRadius: 8,
-    paddingHorizontal: 12, gap: 4,
+    borderWidth: 1, borderColor: COLORS.border, borderRadius: 8, paddingHorizontal: 12,
   },
-  filterText: { fontSize: 12, fontWeight: '600', color: COLORS.textMain },
+  filterText: { fontSize: 12, fontWeight: '600', color: COLORS.textMain, marginHorizontal: 4 },
 
   // Request Card
   requestCard: {
@@ -309,23 +326,23 @@ const styles = StyleSheet.create({
 
   requestBody: { marginBottom: 16 },
   requestQuote: { fontSize: 14, fontStyle: 'italic', color: COLORS.textMuted, marginBottom: 8 },
-  requestMetaRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 4, gap: 6 },
-  requestMetaText: { fontSize: 12, color: COLORS.textMuted },
+  requestMetaRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 4 },
+  requestMetaText: { fontSize: 12, color: COLORS.textMuted, marginLeft: 6 },
 
   requestFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderTopWidth: 1, borderTopColor: COLORS.border, paddingTop: 12 },
   pendingBadge: { backgroundColor: COLORS.pendingBg, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 },
   pendingText: { color: COLORS.pendingText, fontSize: 12, fontWeight: 'bold' },
-  actionRow: { flexDirection: 'row', gap: 8 },
+  actionRow: { flexDirection: 'row' },
   declineButton: {
     flexDirection: 'row', alignItems: 'center', backgroundColor: '#EF4444',
-    paddingHorizontal: 12, paddingVertical: 6, borderRadius: 6, gap: 4,
+    paddingHorizontal: 12, paddingVertical: 6, borderRadius: 6, marginRight: 8,
   },
-  declineButtonText: { color: '#FFF', fontSize: 12, fontWeight: 'bold' },
+  declineButtonText: { color: '#FFF', fontSize: 12, fontWeight: 'bold', marginLeft: 4 },
   approveButton: {
     flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.primary,
-    paddingHorizontal: 12, paddingVertical: 6, borderRadius: 6, gap: 4,
+    paddingHorizontal: 12, paddingVertical: 6, borderRadius: 6,
   },
-  approveButtonText: { color: '#FFF', fontSize: 12, fontWeight: 'bold' },
+  approveButtonText: { color: '#FFF', fontSize: 12, fontWeight: 'bold', marginLeft: 4 },
 
   // Bottom Navigation Bar
   bottomNav: {
@@ -335,14 +352,47 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.card,
     borderTopWidth: 1,
     borderTopColor: COLORS.border,
-    paddingVertical: 10,
-    paddingBottom: 20,
+    paddingTop: 10,
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
   },
-  navItem: { alignItems: 'center', justifyContent: 'center', padding: 4 },
-  navText: { fontSize: 10, color: COLORS.textMuted, marginTop: 4 },
-  navTextActive: { color: COLORS.primary, fontWeight: 'bold' },
+  navItem: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 4,
+    minWidth: 55,
+  },
+  navIconContainer: {
+    position: 'relative',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  navBadge: {
+    position: 'absolute',
+    top: -4,
+    right: -8,
+    backgroundColor: COLORS.danger,
+    borderRadius: 8,
+    minWidth: 16,
+    height: 16,
+    paddingHorizontal: 3,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  navBadgeText: {
+    color: '#FFF',
+    fontSize: 9,
+    fontWeight: 'bold',
+  },
+  navText: {
+    fontSize: 10,
+    color: COLORS.textMuted,
+    marginTop: 4,
+  },
+  navTextActive: {
+    color: COLORS.primary,
+    fontWeight: 'bold',
+  },
 });
