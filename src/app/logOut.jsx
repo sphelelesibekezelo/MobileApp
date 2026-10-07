@@ -1,4 +1,5 @@
 import { Feather } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import {
   Modal,
   StyleSheet,
@@ -7,13 +8,30 @@ import {
   View,
 } from 'react-native';
 
-export default function LogoutModal({ visible, onClose, onConfirm }) {
+export default function LogoutModal({ visible = true, onClose, onConfirm }) {
+  const router = useRouter();
+
+  // Cancel -> close the modal and stay on / go back to the current page (studProfile)
+  const handleCancel = () => {
+    if (onClose) {
+      onClose();
+    } else {
+      router.back();
+    }
+  };
+
+  // Log out -> clear session (if provided) then go to the endSession page
+  const handleConfirm = () => {
+    if (onConfirm) onConfirm(); // TODO(API): clear token / call logout endpoint here
+    router.replace('/endSession');
+  };
+
   return (
     <Modal
       animationType="fade"
       transparent={true}
       visible={visible}
-      onRequestClose={onClose}
+      onRequestClose={handleCancel}
     >
       <View style={styles.modalOverlay}>
         <View style={styles.modalContainer}>
@@ -26,21 +44,21 @@ export default function LogoutModal({ visible, onClose, onConfirm }) {
           {/* Text Content */}
           <Text style={styles.modalTitle}>Log out?</Text>
           <Text style={styles.modalSubtitle}>
-          {"You'll need to sign in again to access your dashboard."}
-        </Text>
+            {"You'll need to sign in again to access your dashboard."}
+          </Text>
 
           {/* Buttons */}
           <View style={styles.modalActionRow}>
             <TouchableOpacity 
               style={styles.modalCancelButton}
-              onPress={onClose}
+              onPress={handleCancel}
             >
               <Text style={styles.modalCancelText}>Cancel</Text>
             </TouchableOpacity>
             
             <TouchableOpacity 
               style={styles.modalLogoutButton}
-              onPress={onConfirm}
+              onPress={handleConfirm}
             >
               <Text style={styles.modalLogoutText}>Log out</Text>
             </TouchableOpacity>
