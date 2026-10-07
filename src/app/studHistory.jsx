@@ -15,11 +15,11 @@ export default function StudHistory() {
       active="history"
       pill="STUDENT PORTAL"
       title={`${USER.name}’s History`}
-      subtitle="View all the requests you made."
+      subtitle="View your recent requests."
       headerRight={<AppButton icon="add" label="New Request" onPress={() => router.push(ROUTES.requests)} />}
     >
       <Card>
-        <Text style={{ color: c.text, fontSize: 18, fontWeight: '700', marginBottom: 10 }}>All Leave Requests</Text>
+        <Text style={{ color: c.text, fontSize: 18, fontWeight: '700', marginBottom: 10 }}>Recent Requests</Text>
         <RequestsTable rows={requests} idColor={c.text} />
       </Card>
     </ScreenShell>
